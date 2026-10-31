@@ -1,177 +1,226 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>منصة المحاسبة المالية</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background: #f1f5f9;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      color: #172033;
-    }
-    .card {
-      width: 100%;
-      max-width: 420px;
-      background: white;
-      padding: 28px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px #00000012;
-    }
-    h1 { text-align: center; font-size: 25px; margin: 0 0 8px; }
-    .subtitle { text-align: center; color: #64748b; margin-bottom: 25px; }
-    label { display: block; margin: 14px 0 7px; font-weight: bold; }
-    input {
-      width: 100%;
-      padding: 13px;
-      border: 1px solid #cbd5e1;
-      border-radius: 9px;
-      font-size: 16px;
-    }
-    button {
-      width: 100%;
-      padding: 13px;
-      margin-top: 16px;
-      border: 0;
-      border-radius: 9px;
-      background: #174ea6;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button.secondary { background: #e2e8f0; color: #172033; }
-    button:disabled { opacity: .6; }
-    #message { text-align: center; margin-top: 16px; line-height: 1.6; }
-    .note { color: #64748b; font-size: 13px; text-align: center; margin-top: 18px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منصة المحاسبة المالية</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif}
+header{background:#174ea6;color:white;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h2{margin:0;font-size:20px}
+main{max-width:900px;margin:30px auto;padding:16px}
+.card{background:white;padding:24px;border-radius:14px;box-shadow:0 4px 18px #0001;margin-bottom:18px}
+.auth{max-width:430px;margin:50px auto}
+h1{font-size:24px;margin-top:0}
+h3{margin-top:0}
+label{display:block;margin:14px 0 7px;font-weight:bold}
+input{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px}
+button{border:0;border-radius:8px;padding:12px 17px;background:#174ea6;color:white;font-size:15px;cursor:pointer;margin-top:12px}
+button.secondary{background:#e2e8f0;color:#172033}
+button.logout{background:#fff;color:#174ea6;margin:0}
+button:disabled{opacity:.6}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+#message{text-align:center;line-height:1.6}
+.muted{color:#64748b}
+.hidden{display:none!important}
+</style>
 </head>
 <body>
-  <main class="card">
-    <h1>منصة المحاسبة المالية</h1>
-    <p class="subtitle">منصة التدريب وحل التكليفات</p>
+
+<header>
+  <h2>منصة المحاسبة المالية</h2>
+  <button id="logout" class="logout hidden">تسجيل الخروج</button>
+</header>
+
+<main>
+  <section id="authSection" class="card auth">
+    <h1>أهلاً بك</h1>
+    <p class="muted">منصة التدريب وحل التكليفات</p>
 
     <form id="authForm">
-      <label for="username">اسم المستخدم (11 رقمًا)</label>
-      <input id="username" type="text" inputmode="numeric"
-        maxlength="11" placeholder="مثال: 12345678901" required>
+      <label>رقم الهاتف</label>
+      <input id="username" inputmode="numeric" maxlength="11" required>
 
-      <label for="password">كلمة المرور</label>
-      <input id="password" type="password"
-        placeholder="أدخل كلمة المرور" required>
+      <label>كلمة المرور</label>
+      <input id="password" type="password" required>
 
-      <div id="signupName" hidden>
-        <label for="displayName">اسم الطالب</label>
-        <input id="displayName" type="text" placeholder="اسمك">
+      <div id="nameArea" class="hidden">
+        <label>اسم الطالب</label>
+        <input id="displayName">
       </div>
 
-      <button type="submit" id="loginButton">تسجيل الدخول</button>
-      <button type="button" class="secondary" id="signupButton">إنشاء حساب جديد</button>
+      <button id="submitButton" type="submit">تسجيل الدخول</button>
+      <button id="switchButton" type="button" class="secondary">إنشاء حساب جديد</button>
     </form>
+    <p id="message"></p>
+  </section>
 
-    <p id="message" role="status"></p>
-    <p class="note">اسم المستخدم يتكون من 11 رقمًا، ولا يشترط أن يكون رقم هاتف حقيقيًا.</p>
-  </main>
+  <section id="dashboard" class="hidden">
+    <div class="card">
+      <h1 id="welcome">مرحبًا</h1>
+      <p id="accountType" class="muted"></p>
+    </div>
 
-  <script>
-    const SUPABASE_URL = "https://owiwfhgixuzkxsahucay.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_y1g-kmOt8BqUHuNzbTKChg_ZCrYG6K0";
+    <div id="adminArea" class="card hidden">
+      <h2>لوحة الإدارة</h2>
+      <p>تم تسجيل الدخول بصلاحيات الأدمن.</p>
+      <p class="muted">سيتم تجهيز أدوات إنشاء التكليفات وإدارة الجداول والإجابات والدرجات في الخطوات التالية.</p>
+    </div>
 
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <div id="studentArea" class="card hidden">
+      <h2>التكليفات</h2>
+      <p class="muted">لم تتم إضافة تكليفات حتى الآن.</p>
+    </div>
+  </section>
+</main>
 
-    const form = document.getElementById("authForm");
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
-    const displayNameInput = document.getElementById("displayName");
-    const signupName = document.getElementById("signupName");
-    const loginButton = document.getElementById("loginButton");
-    const signupButton = document.getElementById("signupButton");
-    const message = document.getElementById("message");
+<script>
+const SUPABASE_URL = "https://owiwfhgixuzkxsahucay.supabase.co";
+const SUPABASE_KEY = "sb_publishable_y1g-kmOt8BqUHuNzbTKChg_ZCrYG6K0";
 
-    let mode = "login";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function showMessage(text, color = "#172033") {
-      message.textContent = text;
-      message.style.color = color;
+const $ = id => document.getElementById(id);
+let mode = "login";
+let checking = false;
+
+function showMessage(text,color="#172033"){
+  $("message").textContent=text;
+  $("message").style.color=color;
+}
+
+function showLogin(){
+  $("authSection").classList.remove("hidden");
+  $("dashboard").classList.add("hidden");
+  $("logout").classList.add("hidden");
+}
+
+async function showDashboard(user){
+  if(checking) return;
+  checking=true;
+
+  try{
+    const {data:profile,error} = await db
+      .from("profiles")
+      .select("username,display_name,role")
+      .eq("id",user.id)
+      .single();
+
+    if(error) throw error;
+
+    $("authSection").classList.add("hidden");
+    $("dashboard").classList.remove("hidden");
+    $("logout").classList.remove("hidden");
+
+    $("welcome").textContent =
+      "مرحبًا " + (profile.display_name || profile.username);
+
+    if(profile.role === "admin"){
+      $("accountType").textContent="حساب أدمن";
+      $("adminArea").classList.remove("hidden");
+      $("studentArea").classList.add("hidden");
+    }else{
+      $("accountType").textContent="حساب طالب";
+      $("studentArea").classList.remove("hidden");
+      $("adminArea").classList.add("hidden");
+    }
+  }catch(error){
+    showLogin();
+    showMessage("تعذر تحميل بيانات الحساب: "+error.message,"#dc2626");
+  }finally{
+    checking=false;
+  }
+}
+
+$("switchButton").addEventListener("click",()=>{
+  mode=mode==="login"?"signup":"login";
+  $("nameArea").classList.toggle("hidden",mode!=="signup");
+  $("submitButton").textContent=mode==="signup"?"إنشاء الحساب":"تسجيل الدخول";
+  $("switchButton").textContent=mode==="signup"?"العودة لتسجيل الدخول":"إنشاء حساب جديد";
+  showMessage("");
+});
+
+$("authForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const username=$("username").value.trim();
+  const password=$("password").value;
+  const displayName=$("displayName").value.trim();
+
+  if(!/^[0-9]{11}$/.test(username)){
+    showMessage("اسم المستخدم يجب أن يتكون من 11 رقمًا.","#dc2626");
+    return;
+  }
+
+  if(password.length<8){
+    showMessage("كلمة المرور يجب ألا تقل عن 8 أحرف أو أرقام.","#dc2626");
+    return;
+  }
+
+  if(mode==="signup"&&!displayName){
+    showMessage("اكتب اسم الطالب.","#dc2626");
+    return;
+  }
+
+  $("submitButton").disabled=true;
+  $("switchButton").disabled=true;
+  showMessage("جارٍ تنفيذ الطلب...");
+
+  const email=`${username}@accounts.financial-accounting.example`;
+
+  try{
+    let result;
+
+    if(mode==="signup"){
+      result=await db.auth.signUp({
+        email,
+        password,
+        options:{data:{username,display_name:displayName}}
+      });
+    }else{
+      result=await db.auth.signInWithPassword({email,password});
     }
 
-    signupButton.addEventListener("click", () => {
-      mode = mode === "login" ? "signup" : "login";
-      signupName.hidden = mode !== "signup";
-      loginButton.textContent = mode === "signup" ? "إنشاء الحساب" : "تسجيل الدخول";
-      signupButton.textContent = mode === "signup" ? "العودة لتسجيل الدخول" : "إنشاء حساب جديد";
-      showMessage("");
-    });
+    if(result.error) throw result.error;
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    if(mode==="signup"){
+      showMessage("تم إنشاء الحساب. يمكنك الآن تسجيل الدخول.","#15803d");
+      mode="login";
+      $("nameArea").classList.add("hidden");
+      $("submitButton").textContent="تسجيل الدخول";
+      $("switchButton").textContent="إنشاء حساب جديد";
+      $("password").value="";
+    }else if(result.data.user){
+      await showDashboard(result.data.user);
+    }
+  }catch(error){
+    showMessage("حدث خطأ: "+error.message,"#dc2626");
+  }finally{
+    $("submitButton").disabled=false;
+    $("switchButton").disabled=false;
+  }
+});
 
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
+$("logout").addEventListener("click",async()=>{
+  const {error}=await db.auth.signOut();
+  if(error){
+    alert("تعذر تسجيل الخروج: "+error.message);
+    return;
+  }
+  showLogin();
+  showMessage("تم تسجيل الخروج.");
+});
 
-      if (!/^[0-9]{11}$/.test(username)) {
-        showMessage("اسم المستخدم يجب أن يتكون من 11 رقمًا بالضبط.", "#dc2626");
-        return;
-      }
-
-      if (password.length < 8) {
-        showMessage("كلمة المرور يجب ألا تقل عن 8 أحرف أو أرقام.", "#dc2626");
-        return;
-      }
-
-      if (mode === "signup" && !displayNameInput.value.trim()) {
-        showMessage("اكتب اسم الطالب.", "#dc2626");
-        return;
-      }
-
-      loginButton.disabled = true;
-      signupButton.disabled = true;
-      showMessage("جارٍ تنفيذ الطلب...");
-
-      const email = `${username}@accounts.financial-accounting.example`;
-      let result;
-
-      try {
-        if (mode === "signup") {
-          result = await client.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                username,
-                display_name: displayNameInput.value.trim()
-              }
-            }
-          });
-        } else {
-          result = await client.auth.signInWithPassword({ email, password });
-        }
-
-        if (result.error) throw result.error;
-
-        if (mode === "signup") {
-          showMessage("تم إنشاء الحساب بنجاح. يمكنك الآن تسجيل الدخول.", "#15803d");
-          mode = "login";
-          signupName.hidden = true;
-          loginButton.textContent = "تسجيل الدخول";
-          signupButton.textContent = "إنشاء حساب جديد";
-          passwordInput.value = "";
-        } else {
-          showMessage("تم تسجيل الدخول بنجاح.", "#15803d");
-        }
-      } catch (error) {
-        showMessage("حدث خطأ: " + error.message, "#dc2626");
-      } finally {
-        loginButton.disabled = false;
-        signupButton.disabled = false;
-      }
-    });
-  </script>
+db.auth.onAuthStateChange((event,session)=>{
+  if(session?.user){
+    showDashboard(session.user);
+  }else{
+    showLogin();
+  }
+});
+</script>
 </body>
-      </html>
+</html>
