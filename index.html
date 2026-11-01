@@ -187,6 +187,23 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </div>
 </section>
 
+<section id="studentSolver" class="hidden">
+  <div class="card">
+    <div class="section-title">
+      <div><h2 id="studentJournalTitle">حل التكليف</h2><p class="muted" id="studentJournalDescription"></p></div>
+      <button type="button" id="backToStudentAssignments" class="secondary">رجوع للتكليفات</button>
+    </div>
+    <p class="muted">اكتب إجاباتك في الخانات الفارغة. يتم حفظ إجاباتك تلقائيًا.</p>
+    <div class="journal-wrap">
+      <table class="journal">
+        <thead><tr><th style="width:100px">التاريخ</th><th>البيان</th><th style="width:150px">مدين</th><th style="width:150px">دائن</th></tr></thead>
+        <tbody id="studentJournalBody"></tbody>
+      </table>
+    </div>
+    <p id="studentSaveMessage" class="muted">لم يتم إدخال إجابات بعد.</p>
+  </div>
+</section>
+
 </section>
 </main>
 
@@ -197,7 +214,7 @@ const SUPABASE_KEY = "sb_publishable_y1g-kmOt8BqUHuNzbTKChg_ZCrYG6K0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $ = id => document.getElementById(id);
-let mode = "login";
+let mode = "login";\nlet currentStudentUser = null;\nlet activeStudentAssignment = null;\nlet studentJournalData = null;\nlet studentAnswers = {};\nlet studentSaveTimer = null;
 
 function message(id,text,color="#172033"){
   $(id).textContent=text;
@@ -288,6 +305,207 @@ async function openJournalEditor(item){
   activeJournalAssignment=item;
   journalEntries=[blankJournalEntry()];
   currentJournalEntry=0;
+  $("journalAssignmentName").textContent=`التكليف ${item.assignment_number}: ${item.title}`;
+  $("accountOptions").value="";
+  $("journalEditor").classList.remove("hidden");
+  $("adminArea").classList.add("hidden");
+  $("saveJournal").disabled=true;
+  $("journalMessage").textContent="جارٍ تحميل الجدول المحفوظ...";
+  window.scrollTo({top:0,behavior:"smooth"});
+  try{
+    const {data,error}=await db.from("assignment_tables")
+      .select("id,settings")
+      .eq("assignment_id",item.id)
+      .eq("table_order",1)
+      .maybeSingle();
+    if(error) throw error;
+    if(data && data.settings && data.settings.journal_data){
+      const saved=data.settings.journal_data;
+      journalEntries=Array.isArray(saved.entries)&&saved.entries.length?saved.entries:[blankJournalEntry()];
+      $("accountOptions").value=saved.account_options||"";
+    }else{
+      journalEntries=[blankJournalEntry()];
+      $("accountOptions").value="";
+    }
+    currentJournalEntry=Math.max(0,journalEntries.length-1);
+    renderJournal();
+    $("journalMessage").textContent=data?"تم تحميل آخر جدول محفوظ.":"لا يوجد جدول محفوظ بعد. صمّم الجدول ثم اضغط حفظ الجدول.";
+  }catch(error){
+    $("journalMessage").textContent="تعذر تحميل الجدول: "+error.message;
+  }finally{
+    $("saveJournal").disabled=false;
+  }
+}
+function closeJournalEditor(){
+  $("journalEditor").classList.add("hidden");
+  $("adminArea").classList.remove("hidden");
+  activeJournalAssignment=null;
+}
+function currentEntry(){return journalEntries[currentJournalEntry];}
+function accountList(){return $("accountOptions").value.split(/[،,]/).map(x=>x.trim()).filter(Boolean);}
+function makeAccountSelect(item){
+  const select=document.createElement("select");
+  const empty=document.createElement("option");empty.value="";empty.textContent="اختر الحساب";select.append(empty);
+  accountList().forEach(name=>{const o=document.createElement("option");o.value=name;o.textContent=name;select.append(o)});
+  select.value=item.account||"";
+  select.addEventListener("change",()=>item.account=select.value);
+  return select;
+}
+function makeAmountInput(item){
+  const input=document.createElement("input");input.type="number";input.inputMode="decimal";input.min="0";input.step="any";input.placeholder="المبلغ";input.value=item.amount||"";
+  input.addEventListener("input",()=>item.amount=input.value);
+  return input;
+}
+function addRemoveButton(onClick){
+  const b=document.createElement("button");b.type="button";b.className="mini";b.textContent="×";b.title="حذف الخانة";b.addEventListener("click",onClick);return b;
+}
+function renderJournal(){
+  const body=$("journalBody");body.replaceChildren();
+  journalEntries.forEach((entry,entryIndex)=>{
+    // ترتيب ثابت: كل صفوف المدين أولاً، ثم الدائن، ثم الشرح.
+    const rows=[];
+    entry.debit.forEach((item,index)=>rows.push({kind:"debit",item,index}));
+    entry.credit.forEach((item,index)=>rows.push({kind:"credit",item,index}));
+    entry.explanations.forEach((item,index)=>rows.push({kind:"explanation",item,index}));
+    rows.forEach((row,r)=>{
+      const tr=document.createElement("tr");
+      if(entryIndex>0&&r===0)tr.classList.add("entry-break");
+      const dateCell=document.createElement("td");
+      if(r===0){
+        const pair=document.createElement("div");pair.className="date-pair";
+        const day=document.createElement("input");day.type="number";day.min="1";day.max="31";day.placeholder="يوم";day.value=entry.date.day||"";day.setAttribute("aria-label","اليوم");day.addEventListener("input",()=>entry.date.day=day.value);
+        const month=document.createElement("input");month.type="number";month.min="1";month.max="12";month.placeholder="شهر";month.value=entry.date.month||"";month.setAttribute("aria-label","الشهر");month.addEventListener("input",()=>entry.date.month=month.value);
+        pair.append(day,month);dateCell.append(pair);
+      }
+      tr.append(dateCell);
+      const statementCell=document.createElement("td");statementCell.className="statement";
+      const wrap=document.createElement("div");wrap.className="journal-part";
+      if(row.kind==="debit"||row.kind==="credit"){
+        const prefix=document.createElement("span");prefix.className="prefix";prefix.textContent=row.kind==="debit"?"من حـ/":"إلى حـ/";
+        wrap.append(prefix,makeAccountSelect(row.item));
+      }else{
+        const input=document.createElement("input");input.type="text";input.placeholder="شرح القيد (بدون درجات)";input.value=row.item;input.addEventListener("input",()=>entry.explanations[row.index]=input.value);wrap.append(input);
+      }
+      wrap.append(addRemoveButton(()=>{
+        if(row.kind==="debit"||row.kind==="credit")entry[row.kind].splice(row.index,1);
+        else entry.explanations.splice(row.index,1);
+        renderJournal();
+      }));
+      statementCell.append(wrap);tr.append(statementCell);
+      const debitCell=document.createElement("td");
+      const creditCell=document.createElement("td");
+      if(row.kind==="debit")debitCell.append(makeAmountInput(row.item));
+      if(row.kind==="credit")creditCell.append(makeAmountInput(row.item));
+      tr.append(debitCell,creditCell);body.append(tr);
+    });
+  });
+  $("journalMessage").textContent=`عدد القيود: ${journalEntries.length} — كل مدين ودائن له خانة مبلغ مرتبطة به تلقائيًا، وشرح القيد غير مُقيّم.`;
+}
+function addStatementPart(kind){
+  if(kind==="debit"||kind==="credit")currentEntry()[kind].push({account:"",amount:""});
+  else currentEntry().explanations.push("");
+  renderJournal();
+}
+function addJournalDate(){renderJournal();}
+function startNewJournalEntry(){journalEntries.push(blankJournalEntry());currentJournalEntry=journalEntries.length-1;renderJournal();}
+$("closeJournal").addEventListener("click",closeJournalEditor);
+$("addDate").addEventListener("click",addJournalDate);
+$("addDebitAccount").addEventListener("click",()=>addStatementPart("debit"));
+$("addCreditAccount").addEventListener("click",()=>addStatementPart("credit"));
+$("addExplanation").addEventListener("click",()=>addStatementPart("explanation"));
+$("newJournalEntry").addEventListener("click",startNewJournalEntry);
+$("accountOptions").addEventListener("input",renderJournal);
+
+async function saveJournal(){
+  if(!activeJournalAssignment) return;
+  const button=$("saveJournal");
+  button.disabled=true;
+  $("journalMessage").textContent="جارٍ حفظ الجدول...";
+  try{
+    const settings={journal_data:{
+      version:1,
+      account_options:$("accountOptions").value,
+      entries:journalEntries,
+      saved_at:new Date().toISOString()
+    }};
+    const rowCount=journalEntries.reduce((sum,entry)=>
+      sum+Math.max(1,entry.debit.length+entry.credit.length+entry.explanations.length),0);
+    const {data:existing,error:findError}=await db.from("assignment_tables")
+      .select("id").eq("assignment_id",activeJournalAssignment.id)
+      .eq("table_order",1).maybeSingle();
+    if(findError) throw findError;
+    const tableRecord={
+      assignment_id:activeJournalAssignment.id,
+      title:"جدول القيود اليومية",
+      table_order:1,
+      row_count:rowCount,
+      column_count:4,
+      settings
+    };
+    const result=existing
+      ? await db.from("assignment_tables").update(tableRecord).eq("id",existing.id)
+      : await db.from("assignment_tables").insert(tableRecord);
+    if(result.error) throw result.error;
+    $("journalMessage").textContent="تم حفظ الجدول بنجاح. يمكنك إغلاق الصفحة والعودة إليه لاحقًا.";
+    $("journalMessage").style.color="#15803d";
+  }catch(error){
+    $("journalMessage").textContent="فشل الحفظ: "+error.message;
+    $("journalMessage").style.color="#dc2626";
+  }finally{
+    button.disabled=false;
+  }
+}
+$("saveJournal").addEventListener("click",saveJournal);
+$("clearJournal").addEventListener("click",()=>{
+  if(confirm("هل تريد مسح كل خانات الجدول؟ لن يتم حذف النسخة المحفوظة إلا بعد الضغط على حفظ الجدول.")){
+    journalEntries=[blankJournalEntry()];
+    currentJournalEntry=0;
+    renderJournal();
+  }
+});
+
+function editAssignment(item){
+  $("editId").value=item.id;
+  $("assignmentNumber").value=item.assignment_number ?? "";
+  $("assignmentTitle").value=item.title;
+  $("assignmentDescription").value=item.description || "";
+  $("assignmentStatus").value=item.status;
+
+  $("formTitle").textContent="تعديل التكليف";
+  $("saveButton").textContent="حفظ التعديلات";
+  $("cancelButton").classList.remove("hidden");
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteAssignment(item){
+  if(!confirm(`هل أنت متأكد من حذف التكليف "${item.title}"؟`)) return;
+
+  const {error}=await db
+    .from("assignments")
+    .delete()
+    .eq("id",item.id);
+
+  if(error){
+    alert("تعذر الحذف: "+error.message);
+    return;
+  }
+
+  resetAssignmentForm();
+  await loadAssignments();
+}
+
+$("assignmentForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const id=$("editId").value;
+
+  const assignment={
+    assignment_number:Number($("assignmentNumber").value),
+    title:$("assignmentTitle").value.trim(),
+    description:$("assignmentDescription").value.trim(),
+    status:$("assignmentStatus").value,
+
   $("journalAssignmentName").textContent=`التكليف ${item.assignment_number}: ${item.title}`;
   $("accountOptions").value="";
   $("journalEditor").classList.remove("hidden");
