@@ -9,72 +9,131 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif}
-header{background:#174ea6;color:white;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-header h2{margin:0;font-size:20px}
-main{max-width:900px;margin:30px auto;padding:16px}
-.card{background:white;padding:24px;border-radius:14px;box-shadow:0 4px 18px #0001;margin-bottom:18px}
-.auth{max-width:430px;margin:50px auto}
+header{background:#174ea6;color:white;padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h2{font-size:19px;margin:0}
+main{max-width:950px;margin:25px auto;padding:15px}
+.card{background:white;padding:22px;border-radius:13px;box-shadow:0 3px 15px #0000000d;margin-bottom:18px}
+.auth{max-width:430px;margin:45px auto}
 h1{font-size:24px;margin-top:0}
 h3{margin-top:0}
-label{display:block;margin:14px 0 7px;font-weight:bold}
-input{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px}
-button{border:0;border-radius:8px;padding:12px 17px;background:#174ea6;color:white;font-size:15px;cursor:pointer;margin-top:12px}
+label{display:block;font-weight:bold;margin:14px 0 7px}
+input,textarea,select{
+width:100%;padding:12px;border:1px solid #cbd5e1;
+border-radius:8px;font-size:16px;background:white
+}
+textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:8px;padding:11px 16px;background:#174ea6;color:white;font-size:15px;cursor:pointer;margin-top:12px}
 button.secondary{background:#e2e8f0;color:#172033}
-button.logout{background:#fff;color:#174ea6;margin:0}
-button:disabled{opacity:.6}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-#message{text-align:center;line-height:1.6}
-.muted{color:#64748b}
+button.danger{background:#dc2626}
+button.success{background:#15803d}
+button.logout{background:white;color:#174ea6;margin:0}
+button:disabled{opacity:.5;cursor:not-allowed}
 .hidden{display:none!important}
+.muted{color:#64748b}
+#message{text-align:center;line-height:1.6}
+.item{border:1px solid #e2e8f0;padding:15px;border-radius:10px;margin-top:12px}
+.item h3{margin-bottom:7px}
+.item p{margin:7px 0;line-height:1.6}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions button{margin-top:8px}
+.status{display:inline-block;padding:5px 10px;border-radius:20px;background:#e2e8f0;font-size:13px}
+.status.published{background:#dcfce7;color:#166534}
+.status.draft{background:#fef3c7;color:#92400e}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
 
 <header>
-  <h2>منصة المحاسبة المالية</h2>
-  <button id="logout" class="logout hidden">تسجيل الخروج</button>
+<h2>منصة المحاسبة المالية</h2>
+<button id="logout" class="logout hidden">تسجيل الخروج</button>
 </header>
 
 <main>
-  <section id="authSection" class="card auth">
-    <h1>أهلاً بك</h1>
-    <p class="muted">منصة التدريب وحل التكليفات</p>
 
-    <form id="authForm">
-      <label>رقم الهاتف</label>
-      <input id="username" inputmode="numeric" maxlength="11" required>
+<section id="authSection" class="card auth">
+<h1>أهلاً بك</h1>
+<p class="muted">منصة التدريب وحل التكليفات</p>
 
-      <label>كلمة المرور</label>
-      <input id="password" type="password" required>
+<form id="authForm">
+<label>رقم الهاتف</label>
+<input id="username" type="text" inputmode="numeric" maxlength="11" required>
 
-      <div id="nameArea" class="hidden">
-        <label>اسم الطالب</label>
-        <input id="displayName">
-      </div>
+<label>كلمة المرور</label>
+<input id="password" type="password" required>
 
-      <button id="submitButton" type="submit">تسجيل الدخول</button>
-      <button id="switchButton" type="button" class="secondary">إنشاء حساب جديد</button>
-    </form>
-    <p id="message"></p>
-  </section>
+<div id="nameArea" class="hidden">
+<label>اسم الطالب</label>
+<input id="displayName" type="text">
+</div>
 
-  <section id="dashboard" class="hidden">
-    <div class="card">
-      <h1 id="welcome">مرحبًا</h1>
-      <p id="accountType" class="muted"></p>
-    </div>
+<button id="submitButton" type="submit">تسجيل الدخول</button>
+<button id="switchButton" type="button" class="secondary">إنشاء حساب جديد</button>
+</form>
+<p id="message"></p>
+</section>
 
-    <div id="adminArea" class="card hidden">
-      <h2>لوحة الإدارة</h2>
-      <p>تم تسجيل الدخول بصلاحيات الأدمن.</p>
-      <p class="muted">سيتم تجهيز أدوات إنشاء التكليفات وإدارة الجداول والإجابات والدرجات في الخطوات التالية.</p>
-    </div>
+<section id="dashboard" class="hidden">
 
-    <div id="studentArea" class="card hidden">
-      <h2>التكليفات</h2>
-      <p class="muted">لم تتم إضافة تكليفات حتى الآن.</p>
-    </div>
-  </section>
+<div class="card">
+<h1 id="welcome">مرحبًا</h1>
+<p id="accountType" class="muted"></p>
+</div>
+
+<section id="adminArea" class="hidden">
+
+<div class="card">
+<h2 id="formTitle">إضافة تكليف جديد</h2>
+
+<form id="assignmentForm">
+<input type="hidden" id="editId">
+
+<label>رقم التكليف</label>
+<input id="assignmentNumber" type="number" min="1" placeholder="مثال: 1" required>
+
+<label>عنوان التكليف</label>
+<input id="assignmentTitle" type="text" placeholder="مثال: قيود اليومية" required>
+
+<label>وصف التكليف</label>
+<textarea id="assignmentDescription" placeholder="اكتب وصف التكليف هنا..."></textarea>
+
+<label>حالة التكليف</label>
+<select id="assignmentStatus">
+<option value="draft">مسودة - غير ظاهر للطلاب</option>
+<option value="published">منشور - ظاهر للطلاب</option>
+</select>
+
+<div class="actions">
+<button id="saveButton" type="submit">حفظ التكليف</button>
+<button id="cancelButton" type="button" class="secondary hidden">إلغاء التعديل</button>
+</div>
+</form>
+
+<p id="adminMessage"></p>
+</div>
+
+<div class="card">
+<div class="section-title">
+<h2>إدارة التكليفات</h2>
+<button id="refreshButton" class="secondary">تحديث القائمة</button>
+</div>
+<div id="assignmentsList">
+<p class="muted">جارٍ تحميل التكليفات...</p>
+</div>
+</div>
+
+</section>
+
+<section id="studentArea" class="hidden">
+<div class="card">
+<h2>التكليفات المتاحة</h2>
+<div id="studentAssignments">
+<p class="muted">جارٍ تحميل التكليفات...</p>
+</div>
+</div>
+</section>
+
+</section>
 </main>
 
 <script>
@@ -85,11 +144,10 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $ = id => document.getElementById(id);
 let mode = "login";
-let checking = false;
 
-function showMessage(text,color="#172033"){
-  $("message").textContent=text;
-  $("message").style.color=color;
+function message(id,text,color="#172033"){
+  $(id).textContent=text;
+  $(id).style.color=color;
 }
 
 function showLogin(){
@@ -98,40 +156,204 @@ function showLogin(){
   $("logout").classList.add("hidden");
 }
 
-async function showDashboard(user){
-  if(checking) return;
-  checking=true;
+function resetAssignmentForm(){
+  $("assignmentForm").reset();
+  $("editId").value="";
+  $("formTitle").textContent="إضافة تكليف جديد";
+  $("saveButton").textContent="حفظ التكليف";
+  $("cancelButton").classList.add("hidden");
+  message("adminMessage","");
+}
+
+function addText(parent,tag,text,className=""){
+  const element=document.createElement(tag);
+  element.textContent=text ?? "";
+  if(className) element.className=className;
+  parent.appendChild(element);
+  return element;
+}
+
+async function loadAssignments(){
+  $("assignmentsList").textContent="جارٍ تحميل التكليفات...";
+
+  const {data,error}=await db
+    .from("assignments")
+    .select("id,title,description,assignment_number,status,created_at")
+    .order("assignment_number",{ascending:true});
+
+  if(error){
+    $("assignmentsList").textContent="خطأ في تحميل التكليفات: "+error.message;
+    return;
+  }
+
+  const list=$("assignmentsList");
+  list.replaceChildren();
+
+  if(!data.length){
+    addText(list,"p","لا توجد تكليفات حتى الآن.","muted");
+    return;
+  }
+
+  data.forEach(item=>{
+    const card=addText(list,"div","","item");
+    addText(card,"h3",`التكليف ${item.assignment_number}: ${item.title}`);
+    addText(card,"p",item.description || "لا يوجد وصف");
+    addText(
+      card,"span",
+      item.status==="published"?"منشور":"مسودة",
+      "status "+item.status
+    );
+
+    const actions=addText(card,"div","","actions");
+
+    const edit=addText(actions,"button","تعديل");
+    edit.addEventListener("click",()=>editAssignment(item));
+
+    const remove=addText(actions,"button","حذف","danger");
+    remove.addEventListener("click",()=>deleteAssignment(item));
+  });
+}
+
+function editAssignment(item){
+  $("editId").value=item.id;
+  $("assignmentNumber").value=item.assignment_number ?? "";
+  $("assignmentTitle").value=item.title;
+  $("assignmentDescription").value=item.description || "";
+  $("assignmentStatus").value=item.status;
+
+  $("formTitle").textContent="تعديل التكليف";
+  $("saveButton").textContent="حفظ التعديلات";
+  $("cancelButton").classList.remove("hidden");
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteAssignment(item){
+  if(!confirm(`هل أنت متأكد من حذف التكليف "${item.title}"؟`)) return;
+
+  const {error}=await db
+    .from("assignments")
+    .delete()
+    .eq("id",item.id);
+
+  if(error){
+    alert("تعذر الحذف: "+error.message);
+    return;
+  }
+
+  resetAssignmentForm();
+  await loadAssignments();
+}
+
+$("assignmentForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const id=$("editId").value;
+
+  const assignment={
+    assignment_number:Number($("assignmentNumber").value),
+    title:$("assignmentTitle").value.trim(),
+    description:$("assignmentDescription").value.trim(),
+    status:$("assignmentStatus").value,
+    updated_at:new Date().toISOString()
+  };
+
+  if(!assignment.title || !Number.isInteger(assignment.assignment_number) || assignment.assignment_number<1){
+    message("adminMessage","راجع رقم التكليف والعنوان.","#dc2626");
+    return;
+  }
+
+  $("saveButton").disabled=true;
+  message("adminMessage","جارٍ الحفظ...");
 
   try{
-    const {data:profile,error} = await db
-      .from("profiles")
-      .select("username,display_name,role")
-      .eq("id",user.id)
-      .single();
+    let result;
 
-    if(error) throw error;
-
-    $("authSection").classList.add("hidden");
-    $("dashboard").classList.remove("hidden");
-    $("logout").classList.remove("hidden");
-
-    $("welcome").textContent =
-      "مرحبًا " + (profile.display_name || profile.username);
-
-    if(profile.role === "admin"){
-      $("accountType").textContent="حساب أدمن";
-      $("adminArea").classList.remove("hidden");
-      $("studentArea").classList.add("hidden");
+    if(id){
+      result=await db.from("assignments")
+        .update(assignment)
+        .eq("id",id);
     }else{
-      $("accountType").textContent="حساب طالب";
-      $("studentArea").classList.remove("hidden");
-      $("adminArea").classList.add("hidden");
+      result=await db.from("assignments")
+        .insert(assignment);
     }
+
+    if(result.error) throw result.error;
+
+    message("adminMessage",id?"تم تعديل التكليف بنجاح.":"تم إنشاء التكليف بنجاح.","#15803d");
+
+    resetAssignmentForm();
+    await loadAssignments();
+
   }catch(error){
-    showLogin();
-    showMessage("تعذر تحميل بيانات الحساب: "+error.message,"#dc2626");
+    message("adminMessage","حدث خطأ: "+error.message,"#dc2626");
   }finally{
-    checking=false;
+    $("saveButton").disabled=false;
+  }
+});
+
+$("cancelButton").addEventListener("click",resetAssignmentForm);
+$("refreshButton").addEventListener("click",loadAssignments);
+
+async function loadStudentAssignments(){
+  $("studentAssignments").textContent="جارٍ تحميل التكليفات...";
+
+  const {data,error}=await db
+    .from("assignments")
+    .select("id,title,description,assignment_number")
+    .eq("status","published")
+    .order("assignment_number",{ascending:true});
+
+  if(error){
+    $("studentAssignments").textContent="تعذر تحميل التكليفات: "+error.message;
+    return;
+  }
+
+  const list=$("studentAssignments");
+  list.replaceChildren();
+
+  if(!data.length){
+    addText(list,"p","لا توجد تكليفات منشورة حاليًا.","muted");
+    return;
+  }
+
+  data.forEach(item=>{
+    const card=addText(list,"div","","item");
+    addText(card,"h3",`التكليف ${item.assignment_number}: ${item.title}`);
+    addText(card,"p",item.description || "لا يوجد وصف");
+    addText(card,"p","سيتم إضافة صفحة حل التكليف في الخطوات القادمة.","muted");
+  });
+}
+
+async function showDashboard(user){
+  const {data:profile,error}=await db
+    .from("profiles")
+    .select("username,display_name,role")
+    .eq("id",user.id)
+    .single();
+
+  if(error){
+    showLogin();
+    message("message","تعذر تحميل بيانات الحساب: "+error.message,"#dc2626");
+    return;
+  }
+
+  $("authSection").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  $("logout").classList.remove("hidden");
+
+  $("welcome").textContent="مرحبًا "+(profile.display_name || profile.username);
+
+  if(profile.role==="admin"){
+    $("accountType").textContent="حساب أدمن";
+    $("adminArea").classList.remove("hidden");
+    $("studentArea").classList.add("hidden");
+    await loadAssignments();
+  }else{
+    $("accountType").textContent="حساب طالب";
+    $("studentArea").classList.remove("hidden");
+    $("adminArea").classList.add("hidden");
+    await loadStudentAssignments();
   }
 }
 
@@ -140,7 +362,7 @@ $("switchButton").addEventListener("click",()=>{
   $("nameArea").classList.toggle("hidden",mode!=="signup");
   $("submitButton").textContent=mode==="signup"?"إنشاء الحساب":"تسجيل الدخول";
   $("switchButton").textContent=mode==="signup"?"العودة لتسجيل الدخول":"إنشاء حساب جديد";
-  showMessage("");
+  message("message","");
 });
 
 $("authForm").addEventListener("submit",async event=>{
@@ -151,23 +373,23 @@ $("authForm").addEventListener("submit",async event=>{
   const displayName=$("displayName").value.trim();
 
   if(!/^[0-9]{11}$/.test(username)){
-    showMessage("اسم المستخدم يجب أن يتكون من 11 رقمًا.","#dc2626");
+    message("message","رقم الهاتف يجب أن يتكون من 11 رقمًا.","#dc2626");
     return;
   }
 
   if(password.length<8){
-    showMessage("كلمة المرور يجب ألا تقل عن 8 أحرف أو أرقام.","#dc2626");
+    message("message","كلمة المرور يجب ألا تقل عن 8 أحرف أو أرقام.","#dc2626");
     return;
   }
 
   if(mode==="signup"&&!displayName){
-    showMessage("اكتب اسم الطالب.","#dc2626");
+    message("message","اكتب اسم الطالب.","#dc2626");
     return;
   }
 
   $("submitButton").disabled=true;
   $("switchButton").disabled=true;
-  showMessage("جارٍ تنفيذ الطلب...");
+  message("message","جارٍ تنفيذ الطلب...");
 
   const email=`${username}@accounts.financial-accounting.example`;
 
@@ -187,7 +409,7 @@ $("authForm").addEventListener("submit",async event=>{
     if(result.error) throw result.error;
 
     if(mode==="signup"){
-      showMessage("تم إنشاء الحساب. يمكنك الآن تسجيل الدخول.","#15803d");
+      message("message","تم إنشاء الحساب. يمكنك الآن تسجيل الدخول.","#15803d");
       mode="login";
       $("nameArea").classList.add("hidden");
       $("submitButton").textContent="تسجيل الدخول";
@@ -196,8 +418,9 @@ $("authForm").addEventListener("submit",async event=>{
     }else if(result.data.user){
       await showDashboard(result.data.user);
     }
+
   }catch(error){
-    showMessage("حدث خطأ: "+error.message,"#dc2626");
+    message("message","حدث خطأ: "+error.message,"#dc2626");
   }finally{
     $("submitButton").disabled=false;
     $("switchButton").disabled=false;
@@ -211,13 +434,24 @@ $("logout").addEventListener("click",async()=>{
     return;
   }
   showLogin();
-  showMessage("تم تسجيل الخروج.");
+});
+
+$("authForm").reset();
+
+db.auth.getSession().then(({data,error})=>{
+  if(error){
+    showLogin();
+    return;
+  }
+  if(data.session?.user){
+    showDashboard(data.session.user);
+  }else{
+    showLogin();
+  }
 });
 
 db.auth.onAuthStateChange((event,session)=>{
-  if(session?.user){
-    showDashboard(session.user);
-  }else{
+  if(event==="SIGNED_OUT" || !session){
     showLogin();
   }
 });
