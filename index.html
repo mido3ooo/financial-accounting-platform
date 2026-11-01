@@ -110,15 +110,15 @@
       <p class="muted">منصة التدريب وحل التكليفات</p>
 
       <form id="authForm">
-        <label>رقم الهاتف</label>
-        <input id="username" type="text" inputmode="numeric" maxlength="11" required>
+        <label>رقم الهاتف أو اسم المستخدم</label>
+        <input id="username" type="text" autocomplete="username" required>
 
         <label>كلمة المرور</label>
-        <input id="password" type="password" required>
+        <input id="password" type="password" autocomplete="current-password" required>
 
         <div id="nameArea" class="hidden">
           <label>اسم الطالب</label>
-          <input id="displayName" type="text">
+          <input id="displayName" type="text" autocomplete="name">
         </div>
 
         <button id="submitButton" type="submit">تسجيل الدخول</button>
@@ -192,6 +192,10 @@
     };
 
     let currentUser = null;
+
+    function normalizeLoginValue(value) {
+      return String(value || '').trim().replace(/\s+/g, '').replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    }
 
     function message(id, text, color = "#172033") {
       const el = $(id);
@@ -401,18 +405,25 @@
     });
 
     async function handleLogin(registerMode) {
-      const phone = $("username").value.trim();
+      const loginInput = $("username").value;
       const password = $("password").value.trim();
       const name = $("displayName").value.trim();
+      const loginValue = normalizeLoginValue(loginInput);
 
-      if (!phone || !password) {
-        message("message", "يرجى إدخال رقم الهاتف وكلمة المرور.", "#dc2626");
+      if (!loginValue || !password) {
+        message("message", "يرجى إدخال اسم المستخدم أو رقم الهاتف وكلمة المرور.", "#dc2626");
         return;
       }
 
-      const demoUser = DEMO_USERS[phone];
+      const demoUser = DEMO_USERS[loginValue] || DEMO_USERS[String(loginValue).toLowerCase()];
       if (demoUser && demoUser.password === password) {
-        currentUser = { ...demoUser, phone };
+        currentUser = { ...demoUser, phone: loginValue };
+        showDashboard(currentUser);
+        return;
+      }
+
+      if (loginValue === "admin" && password === "admin123") {
+        currentUser = { phone: "admin", name: "مدير النظام", role: "admin" };
         showDashboard(currentUser);
         return;
       }
@@ -424,21 +435,23 @@
         }
 
         try {
-          const { error } = await db.from("profiles").insert({
-            phone,
+          const payload = {
+            phone: loginValue,
+            username: loginValue,
             name,
             password,
             role: "student"
-          });
+          };
 
+          const { error } = await db.from("profiles").insert(payload);
           if (error && error.code !== "23505") throw error;
 
-          currentUser = { phone, name, role: "student" };
+          currentUser = { phone: loginValue, name, role: "student" };
           showDashboard(currentUser);
           message("message", "تم إنشاء الحساب بنجاح.", "#15803d");
           return;
         } catch (err) {
-          currentUser = { phone, name, role: "student" };
+          currentUser = { phone: loginValue, name, role: "student" };
           showDashboard(currentUser);
           return;
         }
@@ -448,21 +461,17 @@
         const { data, error } = await db
           .from("profiles")
           .select("*")
-          .eq("phone", phone)
-          .maybeSingle();
+          .or(`phone.eq.${loginValue},username.eq.${loginValue}`)
+          .limit(1);
 
-        if (!error && data && data.password === password) {
+        const profile = !error && data && data.length ? data[0] : null;
+
+        if (profile && profile.password === password) {
           currentUser = {
-            phone: data.phone,
-            name: data.name || "مستخدم",
-            role: data.role || "student"
+            phone: profile.phone || loginValue,
+            name: profile.name || profile.username || "مستخدم",
+            role: profile.role || "student"
           };
-          showDashboard(currentUser);
-          return;
-        }
-
-        if (phone === "admin" && password === "admin123") {
-          currentUser = { phone: "admin", name: "مدير النظام", role: "admin" };
           showDashboard(currentUser);
           return;
         }
