@@ -1,0 +1,641 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منصة المحاسبة المالية</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif}
+header{background:#174ea6;color:white;padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h2{font-size:19px;margin:0}
+main{max-width:950px;margin:25px auto;padding:15px}
+.card{background:white;padding:22px;border-radius:13px;box-shadow:0 3px 15px #0000000d;margin-bottom:18px}
+.auth{max-width:430px;margin:45px auto}
+h1{font-size:24px;margin-top:0}
+h3{margin-top:0}
+label{display:block;font-weight:bold;margin:14px 0 7px}
+input,textarea,select{
+width:100%;padding:12px;border:1px solid #cbd5e1;
+border-radius:8px;font-size:16px;background:white
+}
+textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:8px;padding:11px 16px;background:#174ea6;color:white;font-size:15px;cursor:pointer;margin-top:12px}
+button.secondary{background:#e2e8f0;color:#172033}
+button.danger{background:#dc2626}
+button.success{background:#15803d}
+button.logout{background:white;color:#174ea6;margin:0}
+button:disabled{opacity:.5;cursor:not-allowed}
+.hidden{display:none!important}
+.muted{color:#64748b}
+#message{text-align:center;line-height:1.6}
+.item{border:1px solid #e2e8f0;padding:15px;border-radius:10px;margin-top:12px}
+.item h3{margin-bottom:7px}
+.item p{margin:7px 0;line-height:1.6}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions button{margin-top:8px}
+.status{display:inline-block;padding:5px 10px;border-radius:20px;background:#e2e8f0;font-size:13px}
+.status.published{background:#dcfce7;color:#166534}
+.status.draft{background:#fef3c7;color:#92400e}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+.table-builder{margin-top:18px}
+.builder-grid{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:12px}
+.builder-grid td{border:1px solid #cbd5e1;padding:6px;vertical-align:top}
+.cell-editor{display:flex;flex-direction:column;gap:5px}
+.cell-editor select,.cell-editor input{font-size:13px;padding:7px;min-width:0}
+.table-preview{overflow-x:auto}
+.small-note{font-size:13px;color:#64748b;line-height:1.6}
+
+</style>
+</head>
+<body>
+
+<header>
+<h2>منصة المحاسبة المالية</h2>
+<button id="logout" class="logout hidden">تسجيل الخروج</button>
+</header>
+
+<main>
+
+<section id="authSection" class="card auth">
+<h1>أهلاً بك</h1>
+<p class="muted">منصة التدريب وحل التكليفات</p>
+
+<form id="authForm">
+<label>رقم الهاتف</label>
+<input id="username" type="text" inputmode="numeric" maxlength="11" required>
+
+<label>كلمة المرور</label>
+<input id="password" type="password" required>
+
+<div id="nameArea" class="hidden">
+<label>اسم الطالب</label>
+<input id="displayName" type="text">
+</div>
+
+<button id="submitButton" type="submit">تسجيل الدخول</button>
+<button id="switchButton" type="button" class="secondary">إنشاء حساب جديد</button>
+</form>
+<p id="message"></p>
+</section>
+
+<section id="dashboard" class="hidden">
+
+<div class="card">
+<h1 id="welcome">مرحبًا</h1>
+<p id="accountType" class="muted"></p>
+</div>
+
+<section id="adminArea" class="hidden">
+
+<div class="card">
+<h2 id="formTitle">إضافة تكليف جديد</h2>
+
+<form id="assignmentForm">
+<input type="hidden" id="editId">
+
+<label>رقم التكليف</label>
+<input id="assignmentNumber" type="number" min="1" placeholder="مثال: 1" required>
+
+<label>عنوان التكليف</label>
+<input id="assignmentTitle" type="text" placeholder="مثال: قيود اليومية" required>
+
+<label>وصف التكليف</label>
+<textarea id="assignmentDescription" placeholder="اكتب وصف التكليف هنا..."></textarea>
+
+<label>حالة التكليف</label>
+<select id="assignmentStatus">
+<option value="draft">مسودة - غير ظاهر للطلاب</option>
+<option value="published">منشور - ظاهر للطلاب</option>
+</select>
+
+<div class="actions">
+<button id="saveButton" type="submit">حفظ التكليف</button>
+<button id="cancelButton" type="button" class="secondary hidden">إلغاء التعديل</button>
+</div>
+</form>
+
+<p id="adminMessage"></p>
+</div>
+
+<div class="card">
+<div class="section-title">
+<h2>إدارة التكليفات</h2>
+<button id="refreshButton" class="secondary">تحديث القائمة</button>
+</div>
+<div id="assignmentsList">
+<p class="muted">جارٍ تحميل التكليفات...</p>
+</div>
+</div>
+
+
+<div id="tableBuilderArea" class="card hidden table-builder">
+  <div class="section-title">
+    <h2>منشئ جدول المحاسبة</h2>
+    <button id="closeBuilderButton" type="button" class="secondary">إغلاق</button>
+  </div>
+  <p id="builderAssignmentName" class="muted"></p>
+  <form id="tableForm">
+    <label>عنوان الجدول</label>
+    <input id="tableTitle" type="text" placeholder="مثال: قيود اليومية" required>
+    <div class="actions">
+      <div style="flex:1;min-width:110px"><label>عدد الصفوف</label><input id="rowCount" type="number" min="1" max="20" value="4" required></div>
+      <div style="flex:1;min-width:110px"><label>عدد الأعمدة</label><input id="columnCount" type="number" min="1" max="10" value="4" required></div>
+    </div>
+    <button id="buildGridButton" type="button" class="secondary">إنشاء شبكة الخلايا</button>
+    <p class="small-note">لكل خلية اختر: ثابتة لعرض نص، أو نص / رقم / قائمة ليجيب الطالب عنها. في القائمة اكتب الاختيارات مفصولة بفاصلة.</p>
+    <div id="builderGridWrap" class="table-preview"></div>
+    <button id="saveTableButton" type="submit">حفظ الجدول</button>
+  </form>
+  <p id="tableMessage"></p>
+  <hr>
+  <h3>الجداول المحفوظة لهذا التكليف</h3>
+  <div id="savedTablesList"><p class="muted">اختر تكليفًا لعرض الجداول.</p></div>
+</div>
+
+</section>
+
+<section id="studentArea" class="hidden">
+<div class="card">
+<h2>التكليفات المتاحة</h2>
+<div id="studentAssignments">
+<p class="muted">جارٍ تحميل التكليفات...</p>
+</div>
+</div>
+</section>
+
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://owiwfhgixuzkxsahucay.supabase.co";
+const SUPABASE_KEY = "sb_publishable_y1g-kmOt8BqUHuNzbTKChg_ZCrYG6K0";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let mode = "login";
+
+function message(id,text,color="#172033"){
+  $(id).textContent=text;
+  $(id).style.color=color;
+}
+
+function showLogin(){
+  $("authSection").classList.remove("hidden");
+  $("dashboard").classList.add("hidden");
+  $("logout").classList.add("hidden");
+}
+
+function resetAssignmentForm(){
+  $("assignmentForm").reset();
+  $("editId").value="";
+  $("formTitle").textContent="إضافة تكليف جديد";
+  $("saveButton").textContent="حفظ التكليف";
+  $("cancelButton").classList.add("hidden");
+  message("adminMessage","");
+}
+
+function addText(parent,tag,text,className=""){
+  const element=document.createElement(tag);
+  element.textContent=text ?? "";
+  if(className) element.className=className;
+  parent.appendChild(element);
+  return element;
+}
+
+async function loadAssignments(){
+  $("assignmentsList").textContent="جارٍ تحميل التكليفات...";
+
+  const {data,error}=await db
+    .from("assignments")
+    .select("id,title,description,assignment_number,status,created_at")
+    .order("assignment_number",{ascending:true});
+
+  if(error){
+    $("assignmentsList").textContent="خطأ في تحميل التكليفات: "+error.message;
+    return;
+  }
+
+  const list=$("assignmentsList");
+  list.replaceChildren();
+
+  if(!data.length){
+    addText(list,"p","لا توجد تكليفات حتى الآن.","muted");
+    return;
+  }
+
+  data.forEach(item=>{
+    const card=addText(list,"div","","item");
+    addText(card,"h3",`التكليف ${item.assignment_number}: ${item.title}`);
+    addText(card,"p",item.description || "لا يوجد وصف");
+    addText(
+      card,"span",
+      item.status==="published"?"منشور":"مسودة",
+      "status "+item.status
+    );
+
+    const actions=addText(card,"div","","actions");
+
+    const edit=addText(actions,"button","تعديل");
+    edit.addEventListener("click",()=>editAssignment(item));
+
+    const remove=addText(actions,"button","حذف","danger");
+    remove.addEventListener("click",()=>deleteAssignment(item));
+    const builder=addText(actions,"button","إدارة جدول المحاسبة","success");
+    builder.addEventListener("click",()=>openTableBuilder(item));
+  });
+}
+
+function editAssignment(item){
+  $("editId").value=item.id;
+  $("assignmentNumber").value=item.assignment_number ?? "";
+  $("assignmentTitle").value=item.title;
+  $("assignmentDescription").value=item.description || "";
+  $("assignmentStatus").value=item.status;
+
+  $("formTitle").textContent="تعديل التكليف";
+  $("saveButton").textContent="حفظ التعديلات";
+  $("cancelButton").classList.remove("hidden");
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteAssignment(item){
+  if(!confirm(`هل أنت متأكد من حذف التكليف "${item.title}"؟`)) return;
+
+  const {error}=await db
+    .from("assignments")
+    .delete()
+    .eq("id",item.id);
+
+  if(error){
+    alert("تعذر الحذف: "+error.message);
+    return;
+  }
+
+  resetAssignmentForm();
+  await loadAssignments();
+}
+
+$("assignmentForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const id=$("editId").value;
+
+  const assignment={
+    assignment_number:Number($("assignmentNumber").value),
+    title:$("assignmentTitle").value.trim(),
+    description:$("assignmentDescription").value.trim(),
+    status:$("assignmentStatus").value,
+    updated_at:new Date().toISOString()
+  };
+
+  if(!assignment.title || !Number.isInteger(assignment.assignment_number) || assignment.assignment_number<1){
+    message("adminMessage","راجع رقم التكليف والعنوان.","#dc2626");
+    return;
+  }
+
+  $("saveButton").disabled=true;
+  message("adminMessage","جارٍ الحفظ...");
+
+  try{
+    let result;
+
+    if(id){
+      result=await db.from("assignments")
+        .update(assignment)
+        .eq("id",id);
+    }else{
+      result=await db.from("assignments")
+        .insert(assignment);
+    }
+
+    if(result.error) throw result.error;
+
+    message("adminMessage",id?"تم تعديل التكليف بنجاح.":"تم إنشاء التكليف بنجاح.","#15803d");
+
+    resetAssignmentForm();
+    await loadAssignments();
+
+  }catch(error){
+    message("adminMessage","حدث خطأ: "+error.message,"#dc2626");
+  }finally{
+    $("saveButton").disabled=false;
+  }
+});
+
+$("cancelButton").addEventListener("click",resetAssignmentForm);
+$("refreshButton").addEventListener("click",loadAssignments);
+
+
+let currentBuilderAssignment = null;
+
+function openTableBuilder(assignment){
+  currentBuilderAssignment=assignment;
+  $("builderAssignmentName").textContent=`التكليف: ${assignment.assignment_number} - ${assignment.title}`;
+  $("tableBuilderArea").classList.remove("hidden");
+  $("tableForm").reset();
+  $("tableForm").dataset.editTableId="";
+  $("rowCount").value=4;
+  $("columnCount").value=4;
+  $("builderGridWrap").replaceChildren();
+  message("tableMessage","");
+  loadSavedTables();
+  $("tableBuilderArea").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function makeCellEditor(row,col,existing=null){
+  const td=document.createElement("td");
+  const wrap=addText(td,"div","","cell-editor");
+  const type=document.createElement("select");
+  type.innerHTML='<option value="fixed">خلية ثابتة</option><option value="text">إجابة نصية</option><option value="number">إجابة رقمية</option><option value="select">قائمة اختيارات</option>';
+  type.value=existing?(existing.is_input?existing.cell_type:"fixed"):"fixed";
+  const value=document.createElement("input");
+  value.value=existing?.fixed_content||"";
+  const placeholder=document.createElement("input");
+  placeholder.placeholder="نص توضيحي للطالب";
+  placeholder.value=existing?.placeholder||"";
+  const options=document.createElement("input");
+  options.placeholder="الاختيارات مفصولة بفاصلة";
+  options.value=Array.isArray(existing?.options)?existing.options.join(", "):"";
+  wrap.append(type,value,placeholder,options);
+  function update(){
+    const fixed=type.value==="fixed";
+    value.placeholder=fixed?"النص الثابت الذي سيظهر":"محتوى ثابت (غير مستخدم)";
+    value.disabled=!fixed;
+    placeholder.classList.toggle("hidden",fixed);
+    options.classList.toggle("hidden",type.value!=="select");
+  }
+  type.addEventListener("change",update);
+  update();
+  td._cellData=()=>({
+    row_number:row,column_number:col,
+    cell_type:type.value==="fixed"?"text":type.value,
+    is_input:type.value!=="fixed",
+    fixed_content:type.value==="fixed"?value.value.trim():null,
+    placeholder:type.value==="fixed"?"":placeholder.value.trim(),
+    options:type.value==="select"?options.value.split(",").map(x=>x.trim()).filter(Boolean):[]
+  });
+  return td;
+}
+
+function buildGrid(existingCells=null){
+  const rows=Number($("rowCount").value),cols=Number($("columnCount").value);
+  if(!Number.isInteger(rows)||!Number.isInteger(cols)||rows<1||rows>20||cols<1||cols>10){
+    message("tableMessage","عدد الصفوف من 1 إلى 20، والأعمدة من 1 إلى 10.","#dc2626");return;
+  }
+  const map=new Map();
+  (existingCells||[]).forEach(c=>map.set(`${c.row_number}-${c.column_number}`,c));
+  const table=document.createElement("table");
+  table.className="builder-grid";
+  const tbody=document.createElement("tbody");
+  for(let r=1;r<=rows;r++){
+    const tr=document.createElement("tr");
+    for(let c=1;c<=cols;c++)tr.appendChild(makeCellEditor(r,c,map.get(`${r}-${c}`)||null));
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  $("builderGridWrap").replaceChildren(table);
+  message("tableMessage","");
+}
+
+async function loadSavedTables(){
+  const list=$("savedTablesList");
+  list.textContent="جارٍ تحميل الجداول...";
+  const {data,error}=await db.from("assignment_tables")
+    .select("id,title,table_order,row_count,column_count")
+    .eq("assignment_id",currentBuilderAssignment.id)
+    .order("table_order",{ascending:true});
+  if(error){list.textContent="تعذر تحميل الجداول: "+error.message;return;}
+  list.replaceChildren();
+  if(!data?.length){addText(list,"p","لا توجد جداول محفوظة لهذا التكليف.","muted");return;}
+  data.forEach(t=>{
+    const item=addText(list,"div","","item");
+    addText(item,"strong",t.title);
+    addText(item,"p",`${t.row_count} صف × ${t.column_count} أعمدة`,"muted");
+    const edit=addText(item,"button","تحميل للتعديل","secondary");
+    edit.addEventListener("click",()=>loadTableIntoBuilder(t));
+  });
+}
+
+async function loadTableIntoBuilder(info){
+  const {data,error}=await db.from("assignment_cells")
+    .select("row_number,column_number,cell_type,is_input,fixed_content,placeholder,options")
+    .eq("table_id",info.id);
+  if(error){message("tableMessage","تعذر تحميل الخلايا: "+error.message,"#dc2626");return;}
+  $("tableTitle").value=info.title;
+  $("rowCount").value=info.row_count;
+  $("columnCount").value=info.column_count;
+  $("tableForm").dataset.editTableId=info.id;
+  buildGrid(data||[]);
+  message("tableMessage","تم تحميل الجدول للتعديل. بعد الحفظ سيتم استبدال خلاياه.","#15803d");
+}
+
+$("buildGridButton").addEventListener("click",()=>buildGrid());
+$("closeBuilderButton").addEventListener("click",()=>{
+  $("tableBuilderArea").classList.add("hidden");currentBuilderAssignment=null;
+});
+
+$("tableForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!currentBuilderAssignment){message("tableMessage","اختر تكليفًا أولًا.","#dc2626");return;}
+  const grid=$("builderGridWrap").querySelector("table");
+  if(!grid){message("tableMessage","أنشئ شبكة الخلايا أولًا.","#dc2626");return;}
+  const title=$("tableTitle").value.trim();
+  const rows=Number($("rowCount").value),cols=Number($("columnCount").value);
+  const cells=[...grid.querySelectorAll("td")].map(td=>td._cellData());
+  if(!title||cells.length!==rows*cols){message("tableMessage","راجع العنوان والشبكة ثم أنشئ الشبكة مرة أخرى.","#dc2626");return;}
+  const button=$("saveTableButton");button.disabled=true;
+  message("tableMessage","جارٍ حفظ الجدول...");
+  let tableId=$("tableForm").dataset.editTableId||null;
+  try{
+    if(tableId){
+      const {error}=await db.from("assignment_tables").update({title,row_count:rows,column_count:cols}).eq("id",tableId);
+      if(error)throw error;
+      const {error:delError}=await db.from("assignment_cells").delete().eq("table_id",tableId);
+      if(delError)throw delError;
+    }else{
+      const {data,error}=await db.from("assignment_tables").insert({
+        assignment_id:currentBuilderAssignment.id,title,table_order:1,row_count:rows,column_count:cols,settings:{}
+      }).select("id").single();
+      if(error)throw error;
+      tableId=data.id;
+    }
+    const payload=cells.map(c=>({...c,table_id:tableId,cell_settings:{}}));
+    const {error:cellError}=await db.from("assignment_cells").insert(payload);
+    if(cellError)throw cellError;
+    $("tableForm").dataset.editTableId="";
+    message("tableMessage","تم حفظ الجدول وخلاياه بنجاح.","#15803d");
+    await loadSavedTables();
+  }catch(error){
+    message("tableMessage","حدث خطأ أثناء الحفظ: "+error.message,"#dc2626");
+  }finally{button.disabled=false;}
+});
+
+async function loadStudentAssignments(){
+  $("studentAssignments").textContent="جارٍ تحميل التكليفات...";
+
+  const {data,error}=await db
+    .from("assignments")
+    .select("id,title,description,assignment_number")
+    .eq("status","published")
+    .order("assignment_number",{ascending:true});
+
+  if(error){
+    $("studentAssignments").textContent="تعذر تحميل التكليفات: "+error.message;
+    return;
+  }
+
+  const list=$("studentAssignments");
+  list.replaceChildren();
+
+  if(!data.length){
+    addText(list,"p","لا توجد تكليفات منشورة حاليًا.","muted");
+    return;
+  }
+
+  data.forEach(item=>{
+    const card=addText(list,"div","","item");
+    addText(card,"h3",`التكليف ${item.assignment_number}: ${item.title}`);
+    addText(card,"p",item.description || "لا يوجد وصف");
+    addText(card,"p","سيتم إضافة صفحة حل التكليف في الخطوات القادمة.","muted");
+  });
+}
+
+async function showDashboard(user){
+  const {data:profile,error}=await db
+    .from("profiles")
+    .select("username,display_name,role")
+    .eq("id",user.id)
+    .single();
+
+  if(error){
+    showLogin();
+    message("message","تعذر تحميل بيانات الحساب: "+error.message,"#dc2626");
+    return;
+  }
+
+  $("authSection").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  $("logout").classList.remove("hidden");
+
+  $("welcome").textContent="مرحبًا "+(profile.display_name || profile.username);
+
+  if(profile.role==="admin"){
+    $("accountType").textContent="حساب أدمن";
+    $("adminArea").classList.remove("hidden");
+    $("studentArea").classList.add("hidden");
+    await loadAssignments();
+  }else{
+    $("accountType").textContent="حساب طالب";
+    $("studentArea").classList.remove("hidden");
+    $("adminArea").classList.add("hidden");
+    await loadStudentAssignments();
+  }
+}
+
+$("switchButton").addEventListener("click",()=>{
+  mode=mode==="login"?"signup":"login";
+  $("nameArea").classList.toggle("hidden",mode!=="signup");
+  $("submitButton").textContent=mode==="signup"?"إنشاء الحساب":"تسجيل الدخول";
+  $("switchButton").textContent=mode==="signup"?"العودة لتسجيل الدخول":"إنشاء حساب جديد";
+  message("message","");
+});
+
+$("authForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const username=$("username").value.trim();
+  const password=$("password").value;
+  const displayName=$("displayName").value.trim();
+
+  if(!/^[0-9]{11}$/.test(username)){
+    message("message","رقم الهاتف يجب أن يتكون من 11 رقمًا.","#dc2626");
+    return;
+  }
+
+  if(password.length<8){
+    message("message","كلمة المرور يجب ألا تقل عن 8 أحرف أو أرقام.","#dc2626");
+    return;
+  }
+
+  if(mode==="signup"&&!displayName){
+    message("message","اكتب اسم الطالب.","#dc2626");
+    return;
+  }
+
+  $("submitButton").disabled=true;
+  $("switchButton").disabled=true;
+  message("message","جارٍ تنفيذ الطلب...");
+
+  const email=`${username}@accounts.financial-accounting.example`;
+
+  try{
+    let result;
+
+    if(mode==="signup"){
+      result=await db.auth.signUp({
+        email,
+        password,
+        options:{data:{username,display_name:displayName}}
+      });
+    }else{
+      result=await db.auth.signInWithPassword({email,password});
+    }
+
+    if(result.error) throw result.error;
+
+    if(mode==="signup"){
+      message("message","تم إنشاء الحساب. يمكنك الآن تسجيل الدخول.","#15803d");
+      mode="login";
+      $("nameArea").classList.add("hidden");
+      $("submitButton").textContent="تسجيل الدخول";
+      $("switchButton").textContent="إنشاء حساب جديد";
+      $("password").value="";
+    }else if(result.data.user){
+      await showDashboard(result.data.user);
+    }
+
+  }catch(error){
+    message("message","حدث خطأ: "+error.message,"#dc2626");
+  }finally{
+    $("submitButton").disabled=false;
+    $("switchButton").disabled=false;
+  }
+});
+
+$("logout").addEventListener("click",async()=>{
+  const {error}=await db.auth.signOut();
+  if(error){
+    alert("تعذر تسجيل الخروج: "+error.message);
+    return;
+  }
+  showLogin();
+});
+
+$("authForm").reset();
+
+db.auth.getSession().then(({data,error})=>{
+  if(error){
+    showLogin();
+    return;
+  }
+  if(data.session?.user){
+    showDashboard(data.session.user);
+  }else{
+    showLogin();
+  }
+});
+
+db.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT" || !session){
+    showLogin();
+  }
+});
+</script>
+</body>
+</html>
