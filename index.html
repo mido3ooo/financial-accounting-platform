@@ -1,0 +1,1110 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منصة المحاسبة المالية</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif}
+header{background:#174ea6;color:white;padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h2{font-size:19px;margin:0}
+main{max-width:950px;margin:25px auto;padding:15px}
+.card{background:white;padding:22px;border-radius:13px;box-shadow:0 3px 15px #0000000d;margin-bottom:18px}
+.auth{max-width:430px;margin:45px auto}
+h1{font-size:24px;margin-top:0}
+h3{margin-top:0}
+label{display:block;font-weight:bold;margin:14px 0 7px}
+input,textarea,select{
+width:100%;padding:12px;border:1px solid #cbd5e1;
+border-radius:8px;font-size:16px;background:white
+}
+textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:8px;padding:11px 16px;background:#174ea6;color:white;font-size:15px;cursor:pointer;margin-top:12px}
+button.secondary{background:#e2e8f0;color:#172033}
+button.danger{background:#dc2626}
+button.success{background:#15803d}
+button.logout{background:white;color:#174ea6;margin:0}
+button:disabled{opacity:.5;cursor:not-allowed}
+.hidden{display:none!important}
+.muted{color:#64748b}
+#message{text-align:center;line-height:1.6}
+.item{border:1px solid #e2e8f0;padding:15px;border-radius:10px;margin-top:12px}
+.item h3{margin-bottom:7px}
+.item p{margin:7px 0;line-height:1.6}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions button{margin-top:8px}
+.status{display:inline-block;padding:5px 10px;border-radius:20px;background:#e2e8f0;font-size:13px}
+.status.published{background:#dcfce7;color:#166534}
+.status.draft{background:#fef3c7;color:#92400e}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+.journal-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.journal-toolbar button{margin:0;font-size:14px;padding:9px 12px}
+.journal-wrap{overflow-x:auto;border:1px solid #cbd5e1;border-radius:10px;margin-top:16px;background:#fff}
+.journal{width:100%;min-width:720px;border-collapse:collapse;text-align:center}
+.journal th,.journal td{border:1px solid #cbd5e1;padding:9px;vertical-align:top}
+.journal th{background:#eaf1fb}
+.journal td.statement{text-align:right;min-width:280px}
+.journal input,.journal select{padding:8px;margin:3px 0;font-size:14px;min-width:75px}
+.journal .entry-break td.statement{border-top:3px double #334155}
+.journal-part{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0}
+.journal-part input,.journal-part select{flex:1;min-width:110px}
+.journal-part .prefix{white-space:nowrap;font-weight:bold}
+.journal .mini{padding:5px 8px;margin:2px;font-size:12px;background:#64748b}
+.date-pair{display:flex;gap:4px;align-items:center;justify-content:center}
+.date-pair input{width:55px;min-width:0;text-align:center}
+.account-settings{display:grid;grid-template-columns:1fr;gap:8px;background:#f8fafc;padding:12px;border-radius:9px;margin-top:12px}
+.account-settings input{margin-top:5px}
+.prototype-note{background:#fff7ed;color:#9a3412;padding:10px 12px;border-radius:8px;line-height:1.6}
+.problem-editor-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.problem-editor-heading button{margin:0}
+.problem-transaction-row,.problem-requirement-row{display:grid;grid-template-columns:115px 1fr auto;gap:8px;align-items:start;background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:9px;margin:8px 0}
+.problem-transaction-row textarea{min-height:66px}
+.problem-transaction-row button,.problem-requirement-row button{margin:0;background:#dc2626;padding:8px}
+.problem-requirement-row{grid-template-columns:1fr auto}
+.problem-requirement-row input{min-width:0}
+.problem-view{direction:rtl;text-align:right;line-height:1.9;margin:0 0 18px;color:#111}
+.problem-view .problem-title{text-align:center;font-size:25px;font-weight:bold;margin:0 auto 18px;padding-bottom:6px;width:max-content;min-width:180px;border-bottom:3px solid #111}
+.problem-view .problem-intro{margin:0 0 12px}
+.problem-view ol{padding-right:28px;margin:0 0 20px}
+.problem-view li{padding-bottom:8px}
+.problem-view .problem-required-title{font-size:22px;font-weight:bold;text-decoration:underline;margin:18px 0 5px}
+.problem-view ul{padding-right:28px;margin:0}
+.print-blue-header{display:none}
+@media(max-width:600px){.problem-transaction-row{grid-template-columns:1fr}.problem-requirement-row{grid-template-columns:1fr auto}}
+@media(max-width:600px){main{padding:9px}.card{padding:15px}.journal-toolbar button{flex:1}}
+.submit-modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:18px;z-index:9999}
+.grade-result{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin:12px 0;font-weight:bold}
+@media print{
+ @page{size:A4 landscape;margin:0}
+ html,body{margin:0!important;padding:0!important;background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ header,.no-print,#authSection,#studentArea,#adminArea,#journalEditor .journal-toolbar,#journalEditor .actions,#journalEditor .prototype-note,#studentSolver .prototype-note,#studentSolver .section-title,#studentGradeResult,#studentSaveMessage{display:none!important}
+ main{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+ #dashboard{display:block!important}
+ #studentSolver{display:block!important}
+ #studentSolver>.card{display:block!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+ #printQuestionPage{display:block!important;position:relative;width:297mm;height:210mm;min-height:210mm;max-height:210mm;overflow:hidden;page-break-after:always;break-after:page;padding:0 13mm 12mm}
+ .print-blue-header{height:15mm;margin:0 -13mm;background:#17627e;color:#fff;display:flex;direction:rtl;align-items:center;padding:0 13mm;font-weight:bold;font-size:16pt}
+ .print-top-bar{justify-content:flex-start;margin-bottom:10mm}
+ .print-bottom-bar{position:absolute;bottom:0;left:0;right:0;justify-content:flex-end} 
+ .print-blue-header span{direction:rtl;white-space:nowrap}
+ .problem-paper{direction:rtl;text-align:right;font-family:Arial,sans-serif;color:#000;font-size:15pt;line-height:1.9;white-space:normal}
+ .problem-paper .problem-title{text-align:center;font-size:23pt;font-weight:bold;margin:0 auto 8mm;padding:0 0 2mm;width:max-content;min-width:65mm;border-bottom:1.2mm solid #111}
+ .problem-paper .problem-intro{margin:0 0 5mm;text-align:justify}
+ .problem-paper .problem-transactions{margin:0 0 8mm;padding:0 8mm 0 0;list-style:decimal}
+ .problem-paper .problem-transactions li{padding:0 0 3mm 0;line-height:1.85;break-inside:avoid}
+ .problem-paper .transaction-date{font-weight:normal;white-space:nowrap}
+ .problem-paper .problem-required-title{font-weight:bold;font-size:19pt;text-decoration:underline;text-underline-offset:4px;margin:5mm 0 2mm}
+ .problem-paper .problem-requirements{margin:0;padding:0 8mm 0 0;list-style:none}
+ .problem-paper .problem-requirements li{margin:0 0 2mm;break-inside:avoid}
+ #printSolutionPage{display:block!important;width:100%;margin:0!important;padding:0!important}
+ #printSolutionPage .journal-wrap{display:block!important;overflow:visible!important;border:0!important;border-radius:0!important;margin:0!important;width:100%!important}
+ #printSolutionPage .journal{width:100%!important;min-width:0!important;table-layout:fixed;border-collapse:collapse!important;text-align:center}
+ #printSolutionPage .journal thead{display:table-header-group}
+ #printSolutionPage .journal tr{break-inside:avoid;page-break-inside:avoid}
+ #printSolutionPage .journal th,#printSolutionPage .journal td{border:1px solid #111!important;padding:5mm 3mm!important;color:#000!important;background:#fff!important;font-size:14pt!important;vertical-align:middle!important}
+ #printSolutionPage .journal th{font-weight:bold!important}
+ #printSolutionPage .journal td.statement{text-align:center!important;min-width:0!important}
+ #printSolutionPage .journal input,#printSolutionPage .journal select{width:auto!important;max-width:100%!important;min-width:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:#000!important;appearance:none!important;padding:0!important;margin:0!important;font:inherit!important;text-align:center!important}
+ #printSolutionPage .journal .mini{display:none!important}
+ #printSolutionPage .journal .entry-break td.statement{border-top:2px solid #111!important}
+ #journalEditor{display:block!important}
+}
+
+</style>
+</head>
+<body>
+
+<header>
+<h2>منصة المحاسبة المالية</h2>
+<button id="logout" class="logout hidden">تسجيل الخروج</button>
+</header>
+
+<main>
+
+<section id="authSection" class="card auth">
+<h1>أهلاً بك</h1>
+<p class="muted">منصة التدريب وحل التكليفات</p>
+
+<form id="authForm">
+<label>رقم الهاتف</label>
+<input id="username" type="text" inputmode="numeric" maxlength="11" required>
+
+<label>كلمة المرور</label>
+<input id="password" type="password" required>
+
+<div id="nameArea" class="hidden">
+<label>اسم الطالب</label>
+<input id="displayName" type="text">
+</div>
+
+<button id="submitButton" type="submit">تسجيل الدخول</button>
+<button id="switchButton" type="button" class="secondary">إنشاء حساب جديد</button>
+</form>
+<p id="message"></p>
+</section>
+
+<section id="dashboard" class="hidden">
+
+<div class="card">
+<h1 id="welcome">مرحبًا</h1>
+<p id="accountType" class="muted"></p>
+</div>
+
+<section id="adminArea" class="hidden">
+
+<div class="card">
+<h2 id="formTitle">إضافة تكليف جديد</h2>
+
+<form id="assignmentForm">
+<input type="hidden" id="editId">
+
+<label>رقم التكليف</label>
+<input id="assignmentNumber" type="number" min="1" placeholder="مثال: 1" required>
+
+<label>عنوان التكليف</label>
+<input id="assignmentTitle" type="text" placeholder="مثال: قيود اليومية" required>
+
+<label>وصف التكليف</label>
+<textarea id="assignmentDescription" placeholder="اكتب وصف التكليف هنا..."></textarea>
+
+<label>حالة التكليف</label>
+<select id="assignmentStatus">
+<option value="draft">مسودة - غير ظاهر للطلاب</option>
+<option value="published">منشور - ظاهر للطلاب</option>
+</select>
+
+<div class="actions">
+<button id="saveButton" type="submit">حفظ التكليف</button>
+<button id="cancelButton" type="button" class="secondary hidden">إلغاء التعديل</button>
+</div>
+</form>
+
+<p id="adminMessage"></p>
+</div>
+
+<div class="card">
+<div class="section-title">
+<h2>إدارة التكليفات</h2>
+<button id="refreshButton" class="secondary">تحديث القائمة</button>
+</div>
+<div id="assignmentsList">
+<p class="muted">جارٍ تحميل التكليفات...</p>
+</div>
+</div>
+
+</section>
+
+
+<section id="journalEditor" class="hidden">
+  <div class="card">
+    <div class="section-title">
+      <div><h2 id="journalTitle">محرر جدول القيود اليومية</h2><p class="muted" id="journalAssignmentName"></p></div>
+      <button id="closeJournal" class="secondary">إغلاق</button>
+    </div>
+    <div class="prototype-note">يمكنك تعديل جدول القيود وحفظه. عند فتح التكليف مرة أخرى سيتم تحميل آخر نسخة محفوظة.</div>
+    <div class="account-settings" id="problemEditor">
+      <h3>محتوى التمرين الذي سيظهر للطالب فوق جدول الحل</h3>
+      <label>عنوان التمرين</label>
+      <input id="problemTitle" value="تمرين" placeholder="تمرين">
+      <label>مقدمة التمرين</label>
+      <textarea id="problemIntro" placeholder="مثال: بدأ طارق نشاطه بإنشاء مركز هندسي استشاري في أول نوفمبر 2022، وكانت معاملاته خلال شهر نوفمبر كالتالي:"></textarea>
+      <div class="problem-editor-heading"><strong>المعاملات</strong><button type="button" id="addProblemTransaction" class="secondary">+ إضافة معاملة</button></div>
+      <div id="problemTransactionsEditor"></div>
+      <div class="problem-editor-heading"><strong>المطلوب</strong><button type="button" id="addProblemRequirement" class="secondary">+ إضافة مطلوب</button></div>
+      <div id="problemRequirementsEditor"></div>
+      <p class="muted">اكتب كل معاملة في خانة مستقلة وحدد تاريخها، وسيقوم الموقع بترقيمها تلقائيًا للطالب.</p>
+    </div>
+    <div class="account-settings">
+      <label>قائمة الحسابات (افصل بين كل حساب والتاني بفاصلة)</label>
+      <input id="accountOptions" placeholder="مثال: الصندوق، البنك، المبيعات، المشتريات">
+    </div>
+    <div class="journal-toolbar">
+      <button type="button" id="addDate" class="secondary">+ تاريخ</button>
+      <button type="button" id="addDebitAccount">+ مدين (من حـ/)</button>
+      <button type="button" id="addCreditAccount">+ دائن (إلى حـ/)</button>
+      <button type="button" id="addExplanation" class="secondary">+ شرح القيد</button>
+      <button type="button" id="newJournalEntry" class="success">+ قيد جديد</button>
+    </div>
+    <div class="journal-wrap">
+      <table class="journal">
+        <thead><tr><th style="width:150px">مدين</th><th style="width:150px">دائن</th><th>بيان</th><th style="width:100px">تاريخ</th></tr></thead>
+        <tbody id="journalBody"></tbody>
+      </table>
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button type="button" id="printAdminJournal" class="secondary">طباعة الجدول</button>
+      <button type="button" id="saveJournal" class="success">حفظ الجدول</button>
+      <button type="button" id="clearJournal" class="danger">مسح الجدول</button>
+    </div>
+    <p id="journalMessage" class="muted"></p>
+  </div>
+</section>
+
+<section id="studentArea" class="hidden">
+<div class="card">
+<h2>التكليفات المتاحة</h2>
+<div id="studentAssignments">
+<p class="muted">جارٍ تحميل التكليفات...</p>
+</div>
+</div>
+</section>
+
+<section id="studentSolver" class="hidden">
+  <div class="card">
+    <div class="section-title">
+      <div>
+        <h2 id="studentSolverTitle">حل التكليف</h2>
+        <p id="studentSolverDescription" class="muted"></p>
+      </div>
+      <button type="button" id="closeStudentSolver" class="secondary">العودة للتكليفات</button>
+    </div>
+    <div class="prototype-note no-print">اكتب إجاباتك في الخانات. يتم حفظها تلقائيًا أثناء الحل.</div>
+    <div id="studentGradeResult" class="grade-result hidden"></div>
+    <div class="actions no-print" style="margin:12px 0">
+      <button type="button" id="printAssignment" class="secondary">طباعة الأسيمنت</button>
+      <button type="button" id="submitAssignment" class="success">تسليم الأسيمنت</button>
+    </div>
+    <section id="printQuestionPage">
+      <div class="print-blue-header print-top-bar"><span id="printAssignmentNumber"></span></div>
+      <div id="printQuestionContent" class="problem-paper"></div>
+      <div class="print-blue-header print-bottom-bar"><span id="printStudentName"></span></div>
+    </section>
+    <section id="printSolutionPage">
+      <div class="journal-wrap">
+        <table class="journal">
+          <thead><tr><th style="width:150px">مدين</th><th style="width:150px">دائن</th><th>بيان</th><th style="width:100px">تاريخ</th></tr></thead>
+          <tbody id="studentJournalBody"></tbody>
+        </table>
+      </div>
+    </section>
+    <p id="studentSaveMessage" class="muted" aria-live="polite"></p>
+  </div>
+</section>
+
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://owiwfhgixuzkxsahucay.supabase.co";
+const SUPABASE_KEY = "sb_publishable_y1g-kmOt8BqUHuNzbTKChg_ZCrYG6K0";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let mode = "login";
+let currentDisplayName="";
+
+function message(id,text,color="#172033"){
+  $(id).textContent=text;
+  $(id).style.color=color;
+}
+
+function showLogin(){
+  $("authSection").classList.remove("hidden");
+  $("dashboard").classList.add("hidden");
+  $("logout").classList.add("hidden");
+}
+
+function resetAssignmentForm(){
+  $("assignmentForm").reset();
+  $("editId").value="";
+  $("formTitle").textContent="إضافة تكليف جديد";
+  $("saveButton").textContent="حفظ التكليف";
+  $("cancelButton").classList.add("hidden");
+  message("adminMessage","");
+}
+
+function addText(parent,tag,text,className=""){
+  const element=document.createElement(tag);
+  element.textContent=text ?? "";
+  if(className) element.className=className;
+  parent.appendChild(element);
+  return element;
+}
+
+async function loadAssignments(){
+  $("assignmentsList").textContent="جارٍ تحميل التكليفات...";
+
+  const {data,error}=await db
+    .from("assignments")
+    .select("id,title,description,assignment_number,status,created_at")
+    .order("assignment_number",{ascending:true});
+
+  if(error){
+    $("assignmentsList").textContent="خطأ في تحميل التكليفات: "+error.message;
+    return;
+  }
+
+  const list=$("assignmentsList");
+  list.replaceChildren();
+
+  if(!data.length){
+    addText(list,"p","لا توجد تكليفات حتى الآن.","muted");
+    return;
+  }
+
+  data.forEach(item=>{
+    const card=addText(list,"div","","item");
+    addText(card,"h3",`التكليف ${item.assignment_number}: ${item.title}`);
+    addText(card,"p",item.description || "لا يوجد وصف");
+    addText(
+      card,"span",
+      item.status==="published"?"منشور":"مسودة",
+      "status "+item.status
+    );
+
+    const actions=addText(card,"div","","actions");
+
+    const edit=addText(actions,"button","تعديل");
+    edit.addEventListener("click",()=>editAssignment(item));
+
+    const manage=addText(actions,"button","إدارة جدول القيود اليومية","success");
+    manage.addEventListener("click",()=>openJournalEditor(item));
+
+    const remove=addText(actions,"button","حذف","danger");
+    remove.addEventListener("click",()=>deleteAssignment(item));
+  });
+}
+
+
+let activeJournalAssignment=null;
+let journalEntries=[];
+let currentJournalEntry=0;
+let problemTransactions=[];
+let problemRequirements=[];
+
+function blankJournalEntry(){
+  return {
+    date:{day:"",month:""},
+    debit:[{account:"",amount:""}],
+    credit:[{account:"",amount:""}],
+    explanations:[""]
+  };
+}
+function renderProblemEditor(){
+  const transactions=$("problemTransactionsEditor");
+  transactions.replaceChildren();
+  problemTransactions.forEach((item,index)=>{
+    const row=addText(transactions,"div","","problem-transaction-row");
+    const date=document.createElement("input");date.type="text";date.placeholder="التاريخ مثل 1/11";date.value=item.date||"";
+    date.addEventListener("input",()=>problemTransactions[index].date=date.value);
+    const details=document.createElement("textarea");details.placeholder="اكتب تفاصيل المعاملة والمبلغ وطريقة السداد...";details.value=item.text||"";
+    details.addEventListener("input",()=>problemTransactions[index].text=details.value);
+    const remove=addText(row,"button","حذف");remove.type="button";remove.addEventListener("click",()=>{problemTransactions.splice(index,1);renderProblemEditor();});
+    row.append(date,details,remove);
+  });
+  const requirements=$("problemRequirementsEditor");
+  requirements.replaceChildren();
+  problemRequirements.forEach((item,index)=>{
+    const row=addText(requirements,"div","","problem-requirement-row");
+    const input=document.createElement("input");input.type="text";input.placeholder="اكتب مطلوبًا واحدًا";input.value=item||"";
+    input.addEventListener("input",()=>problemRequirements[index]=input.value);
+    const remove=addText(row,"button","حذف");remove.type="button";remove.addEventListener("click",()=>{problemRequirements.splice(index,1);renderProblemEditor();});
+    row.append(input,remove);
+  });
+}
+$("addProblemTransaction").addEventListener("click",()=>{problemTransactions.push({date:"",text:""});renderProblemEditor();});
+$("addProblemRequirement").addEventListener("click",()=>{problemRequirements.push("");renderProblemEditor();});
+function loadProblemEditor(problem={}){
+  $("problemTitle").value=problem.title||"تمرين";
+  $("problemIntro").value=problem.intro||"";
+  if(Array.isArray(problem.transactions)) problemTransactions=problem.transactions.map(x=>({date:x.date||"",text:x.text||""}));
+  else problemTransactions=(problem.details||"").split("\n").map(x=>x.trim()).filter(Boolean).map(x=>({date:"",text:x.replace(/^\d+[.)-]?\s*/,"")}));
+  if(Array.isArray(problem.requirements)) problemRequirements=[...problem.requirements];
+  else problemRequirements=(problem.required||"").split("\n").map(x=>x.trim()).filter(Boolean);
+  if(!problemTransactions.length)problemTransactions=[{date:"",text:""}];
+  if(!problemRequirements.length)problemRequirements=[""];
+  renderProblemEditor();
+}
+function getProblemData(){
+  return {title:$("problemTitle").value.trim(),intro:$("problemIntro").value.trim(),transactions:problemTransactions.map(x=>({date:(x.date||"").trim(),text:(x.text||"").trim()})).filter(x=>x.date||x.text),requirements:problemRequirements.map(x=>x.trim()).filter(Boolean)};
+}
+function buildProblemView(problem,container){
+  container.replaceChildren();
+  const title=addText(container,"div",problem.title||"تمرين","problem-title");
+  if(problem.intro)addText(container,"p",problem.intro,"problem-intro");
+  const transactions=Array.isArray(problem.transactions)?problem.transactions:((problem.details||"").split("\n").filter(Boolean).map(text=>({date:"",text})));
+  if(transactions.length){
+    const ol=document.createElement("ol");ol.className="problem-transactions";
+    transactions.forEach(item=>{
+      const li=document.createElement("li");
+      if(item.date){const date=addText(li,"span",`في ${item.date} `,"transaction-date");}
+      li.appendChild(document.createTextNode(item.text||""));ol.appendChild(li);
+    });container.appendChild(ol);
+  }
+  const requirements=Array.isArray(problem.requirements)?problem.requirements:((problem.required||"").split("\n").filter(Boolean));
+  if(requirements.length){
+    addText(container,"div","المطلوب:","problem-required-title");
+    const ul=document.createElement("ul");ul.className="problem-requirements";
+    requirements.forEach(text=>addText(ul,"li",text));container.appendChild(ul);
+  }
+}
+
+async function openJournalEditor(item){
+  activeJournalAssignment=item;
+  journalEntries=[blankJournalEntry()];
+  currentJournalEntry=0;
+  $("journalAssignmentName").textContent=`التكليف ${item.assignment_number}: ${item.title}`;
+  $("accountOptions").value="";
+  $("journalEditor").classList.remove("hidden");
+  $("adminArea").classList.add("hidden");
+  $("saveJournal").disabled=true;
+  $("journalMessage").textContent="جارٍ تحميل الجدول المحفوظ...";
+  window.scrollTo({top:0,behavior:"smooth"});
+  try{
+    const {data,error}=await db.from("assignment_tables")
+      .select("id,settings")
+      .eq("assignment_id",item.id)
+      .eq("table_order",1)
+      .maybeSingle();
+    if(error) throw error;
+    let saved=data?.settings?.journal_data || null;
+    const {data:keyData,error:keyLoadError}=await db.from("journal_answer_keys")
+      .select("answer_data").eq("assignment_id",item.id).maybeSingle();
+    if(keyLoadError) throw keyLoadError;
+    if(keyData?.answer_data) saved=keyData.answer_data;
+    const problem=data?.settings?.problem || {};
+    loadProblemEditor(problem);
+    if(saved){
+      journalEntries=Array.isArray(saved.entries)&&saved.entries.length?saved.entries:[blankJournalEntry()];
+      $("accountOptions").value=saved.account_options||"";
+    }else{
+      journalEntries=[blankJournalEntry()];
+      $("accountOptions").value="";
+    }
+    currentJournalEntry=Math.max(0,journalEntries.length-1);
+    renderJournal();
+    $("journalMessage").textContent=data?"تم تحميل آخر جدول محفوظ.":"لا يوجد جدول محفوظ بعد. صمّم الجدول ثم اضغط حفظ الجدول.";
+  }catch(error){
+    $("journalMessage").textContent="تعذر تحميل الجدول: "+error.message;
+  }finally{
+    $("saveJournal").disabled=false;
+  }
+}
+function closeJournalEditor(){
+  $("journalEditor").classList.add("hidden");
+  $("adminArea").classList.remove("hidden");
+  activeJournalAssignment=null;
+}
+function currentEntry(){return journalEntries[currentJournalEntry];}
+function accountList(){return $("accountOptions").value.split(/[،,]/).map(x=>x.trim()).filter(Boolean);}
+function makeAccountSelect(item){
+  const select=document.createElement("select");
+  const empty=document.createElement("option");empty.value="";empty.textContent="اختر الحساب";select.append(empty);
+  accountList().forEach(name=>{const o=document.createElement("option");o.value=name;o.textContent=name;select.append(o)});
+  select.value=item.account||"";
+  select.addEventListener("change",()=>item.account=select.value);
+  return select;
+}
+function makeAmountInput(item){
+  const input=document.createElement("input");input.type="number";input.inputMode="decimal";input.min="0";input.step="any";input.placeholder="المبلغ";input.value=item.amount||"";
+  input.addEventListener("input",()=>item.amount=input.value);
+  return input;
+}
+function addRemoveButton(onClick){
+  const b=document.createElement("button");b.type="button";b.className="mini";b.textContent="×";b.title="حذف الخانة";b.addEventListener("click",onClick);return b;
+}
+function renderJournal(){
+  const body=$("journalBody");body.replaceChildren();
+  journalEntries.forEach((entry,entryIndex)=>{
+    // ترتيب ثابت: كل صفوف المدين أولاً، ثم الدائن، ثم الشرح.
+    const rows=[];
+    entry.debit.forEach((item,index)=>rows.push({kind:"debit",item,index}));
+    entry.credit.forEach((item,index)=>rows.push({kind:"credit",item,index}));
+    entry.explanations.forEach((item,index)=>rows.push({kind:"explanation",item,index}));
+    rows.forEach((row,r)=>{
+      const tr=document.createElement("tr");
+      if(entryIndex>0&&r===0)tr.classList.add("entry-break");
+      const dateCell=document.createElement("td");
+      if(r===0){
+        const pair=document.createElement("div");pair.className="date-pair";
+        const day=document.createElement("input");day.type="number";day.min="1";day.max="31";day.placeholder="يوم";day.value=entry.date.day||"";day.setAttribute("aria-label","اليوم");day.addEventListener("input",()=>entry.date.day=day.value);
+        const month=document.createElement("input");month.type="number";month.min="1";month.max="12";month.placeholder="شهر";month.value=entry.date.month||"";month.setAttribute("aria-label","الشهر");month.addEventListener("input",()=>entry.date.month=month.value);
+        pair.append(day,month);dateCell.append(pair);
+      }
+      const statementCell=document.createElement("td");statementCell.className="statement";
+      const wrap=document.createElement("div");wrap.className="journal-part";
+      if(row.kind==="debit"||row.kind==="credit"){
+        const prefix=document.createElement("span");prefix.className="prefix";prefix.textContent=row.kind==="debit"?"من حـ/":"إلى حـ/";
+        wrap.append(prefix,makeAccountSelect(row.item));
+      }else{
+        const input=document.createElement("input");input.type="text";input.placeholder="شرح القيد (بدون درجات)";input.value=row.item;input.addEventListener("input",()=>entry.explanations[row.index]=input.value);wrap.append(input);
+      }
+      wrap.append(addRemoveButton(()=>{
+        if(row.kind==="debit"||row.kind==="credit")entry[row.kind].splice(row.index,1);
+        else entry.explanations.splice(row.index,1);
+        renderJournal();
+      }));
+      statementCell.append(wrap);
+      const debitCell=document.createElement("td");
+      const creditCell=document.createElement("td");
+      if(row.kind==="debit")debitCell.append(makeAmountInput(row.item));
+      if(row.kind==="credit")creditCell.append(makeAmountInput(row.item));
+      tr.append(debitCell,creditCell,statementCell,dateCell);body.append(tr);
+    });
+  });
+  $("journalMessage").textContent=`عدد القيود: ${journalEntries.length} — كل مدين ودائن له خانة مبلغ مرتبطة به تلقائيًا، وشرح القيد غير مُقيّم.`;
+}
+function addStatementPart(kind){
+  if(kind==="debit"||kind==="credit")currentEntry()[kind].push({account:"",amount:""});
+  else currentEntry().explanations.push("");
+  renderJournal();
+}
+function addJournalDate(){renderJournal();}
+function startNewJournalEntry(){journalEntries.push(blankJournalEntry());currentJournalEntry=journalEntries.length-1;renderJournal();}
+$("closeJournal").addEventListener("click",closeJournalEditor);
+$("addDate").addEventListener("click",addJournalDate);
+$("addDebitAccount").addEventListener("click",()=>addStatementPart("debit"));
+$("addCreditAccount").addEventListener("click",()=>addStatementPart("credit"));
+$("addExplanation").addEventListener("click",()=>addStatementPart("explanation"));
+$("newJournalEntry").addEventListener("click",startNewJournalEntry);
+$("accountOptions").addEventListener("input",renderJournal);
+
+async function saveJournal(){
+  if(!activeJournalAssignment) return;
+  const button=$("saveJournal");
+  button.disabled=true;
+  $("journalMessage").textContent="جارٍ حفظ الجدول...";
+  try{
+    const savedAt=new Date().toISOString();
+    const answerData={version:1,account_options:$("accountOptions").value,entries:journalEntries,saved_at:savedAt};
+    const safeEntries=journalEntries.map(entry=>({
+      date:{day:"",month:""},
+      debit:(entry.debit||[]).map(()=>({account:"",amount:""})),
+      credit:(entry.credit||[]).map(()=>({account:"",amount:""})),
+      explanations:(entry.explanations||[]).map(()=>"")
+    }));
+    const settings={
+      problem:getProblemData(),
+      journal_data:{version:1,account_options:$("accountOptions").value,entries:safeEntries,saved_at:savedAt}
+    };
+    const {error:keyError}=await db.from("journal_answer_keys").upsert({
+      assignment_id:activeJournalAssignment.id,answer_data:answerData,updated_at:savedAt
+    },{onConflict:"assignment_id"});
+    if(keyError) throw keyError;
+    const rowCount=journalEntries.reduce((sum,entry)=>
+      sum+Math.max(1,entry.debit.length+entry.credit.length+entry.explanations.length),0);
+    const {data:existing,error:findError}=await db.from("assignment_tables")
+      .select("id").eq("assignment_id",activeJournalAssignment.id)
+      .eq("table_order",1).maybeSingle();
+    if(findError) throw findError;
+    const tableRecord={
+      assignment_id:activeJournalAssignment.id,
+      title:"جدول القيود اليومية",
+      table_order:1,
+      row_count:rowCount,
+      column_count:4,
+      settings
+    };
+    const result=existing
+      ? await db.from("assignment_tables").update(tableRecord).eq("id",existing.id)
+      : await db.from("assignment_tables").insert(tableRecord);
+    if(result.error) throw result.error;
+    $("journalMessage").textContent="تم حفظ الجدول بنجاح. يمكنك إغلاق الصفحة والعودة إليه لاحقًا.";
+    $("journalMessage").style.color="#15803d";
+  }catch(error){
+    $("journalMessage").textContent="فشل الحفظ: "+error.message;
+    $("journalMessage").style.color="#dc2626";
+  }finally{
+    button.disabled=false;
+  }
+}
+$("saveJournal").addEventListener("click",saveJournal);
+$("printAdminJournal").addEventListener("click",()=>window.print());
+$("clearJournal").addEventListener("click",()=>{
+  if(confirm("هل تريد مسح كل خانات الجدول؟ لن يتم حذف النسخة المحفوظة إلا بعد الضغط على حفظ الجدول.")){
+    journalEntries=[blankJournalEntry()];
+    currentJournalEntry=0;
+    renderJournal();
+  }
+});
+
+function editAssignment(item){
+  $("editId").value=item.id;
+  $("assignmentNumber").value=item.assignment_number ?? "";
+  $("assignmentTitle").value=item.title;
+  $("assignmentDescription").value=item.description || "";
+  $("assignmentStatus").value=item.status;
+
+  $("formTitle").textContent="تعديل التكليف";
+  $("saveButton").textContent="حفظ التعديلات";
+  $("cancelButton").classList.remove("hidden");
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteAssignment(item){
+  if(!confirm(`هل أنت متأكد من حذف التكليف "${item.title}"؟`)) return;
+
+  const {error}=await db
+    .from("assignments")
+    .delete()
+    .eq("id",item.id);
+
+  if(error){
+    alert("تعذر الحذف: "+error.message);
+    return;
+  }
+
+  resetAssignmentForm();
+  await loadAssignments();
+}
+
+$("assignmentForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const id=$("editId").value;
+
+  const assignment={
+    assignment_number:Number($("assignmentNumber").value),
+    title:$("assignmentTitle").value.trim(),
+    description:$("assignmentDescription").value.trim(),
+    status:$("assignmentStatus").value,
+    updated_at:new Date().toISOString()
+  };
+
+  if(!assignment.title || !Number.isInteger(assignment.assignment_number) || assignment.assignment_number<1){
+    message("adminMessage","راجع رقم التكليف والعنوان.","#dc2626");
+    return;
+  }
+
+  $("saveButton").disabled=true;
+  message("adminMessage","جارٍ الحفظ...");
+
+  try{
+    let result;
+
+    if(id){
+      result=await db.from("assignments")
+        .update(assignment)
+        .eq("id",id);
+    }else{
+      result=await db.from("assignments")
+        .insert(assignment);
+    }
+
+    if(result.error) throw result.error;
+
+    message("adminMessage",id?"تم تعديل التكليف بنجاح.":"تم إنشاء التكليف بنجاح.","#15803d");
+
+    resetAssignmentForm();
+    await loadAssignments();
+
+  }catch(error){
+    message("adminMessage","حدث خطأ: "+error.message,"#dc2626");
+  }finally{
+    $("saveButton").disabled=false;
+  }
+});
+
+$("cancelButton").addEventListener("click",resetAssignmentForm);
+$("refreshButton").addEventListener("click",loadAssignments);
+
+async function loadStudentAssignments(){
+  $("studentAssignments").textContent="جارٍ تحميل التكليفات...";
+
+  const {data,error}=await db
+    .from("assignments")
+    .select("id,title,description,assignment_number")
+    .eq("status","published")
+    .order("assignment_number",{ascending:true});
+
+  if(error){
+    $("studentAssignments").textContent="تعذر تحميل التكليفات: "+error.message;
+    return;
+  }
+
+  const list=$("studentAssignments");
+  list.replaceChildren();
+
+  if(!data.length){
+    addText(list,"p","لا توجد تكليفات منشورة حاليًا.","muted");
+    return;
+  }
+
+  data.forEach(item=>{
+    const card=addText(list,"div","","item");
+    addText(card,"h3",`التكليف ${item.assignment_number}: ${item.title}`);
+    addText(card,"p",item.description || "لا يوجد وصف");
+    const actions=addText(card,"div","","actions");
+    const start=addText(actions,"button","ابدأ الحل","success");
+    start.addEventListener("click",()=>openStudentAssignment(item));
+  });
+}
+
+let currentUser=null;
+let activeStudentAssignment=null;
+let studentJournalEntries=[];
+let studentSaveTimer=null;
+let studentWorkStatus="in_progress";
+
+function makeStudentInput(value,placeholder,type="text",onInput){
+  const input=document.createElement("input");
+  input.type=type;
+  input.value=value??"";
+  input.placeholder=placeholder;
+  if(type==="number"){input.inputMode="decimal";input.step="any";}
+  input.addEventListener("input",onInput);
+  return input;
+}
+
+function renderStudentJournal(){
+  const body=$("studentJournalBody");
+  body.replaceChildren();
+
+  studentJournalEntries.forEach((entry,entryIndex)=>{
+    const rows=[];
+    (entry.debit||[]).forEach((item,index)=>rows.push({kind:"debit",item,index}));
+    (entry.credit||[]).forEach((item,index)=>rows.push({kind:"credit",item,index}));
+    (entry.explanations||[]).forEach((item,index)=>rows.push({kind:"explanation",item,index}));
+
+    rows.forEach((row,r)=>{
+      const tr=document.createElement("tr");
+      if(entryIndex>0&&r===0)tr.classList.add("entry-break");
+
+      const dateCell=document.createElement("td");
+      if(r===0){
+        const pair=document.createElement("div");
+        pair.className="date-pair";
+
+        const day=makeStudentInput(entry.date?.day,"يوم","number",()=>{
+          entry.date.day=day.value; scheduleStudentSave();
+        });
+        day.min="1";day.max="31";day.setAttribute("aria-label","اليوم");
+
+        const month=makeStudentInput(entry.date?.month,"شهر","number",()=>{
+          entry.date.month=month.value; scheduleStudentSave();
+        });
+        month.min="1";month.max="12";month.setAttribute("aria-label","الشهر");
+
+        pair.append(day,month);
+        dateCell.append(pair);
+      }
+      const statement=document.createElement("td");
+      statement.className="statement";
+      const wrap=document.createElement("div");
+      wrap.className="journal-part";
+
+      if(row.kind==="debit"||row.kind==="credit"){
+        const prefix=document.createElement("span");
+        prefix.className="prefix";
+        prefix.textContent=row.kind==="debit"?"من حـ/":"إلى حـ/";
+
+        const select=document.createElement("select");
+        const empty=document.createElement("option");
+        empty.value="";empty.textContent="اختر الحساب";select.append(empty);
+
+        const options=studentAccountList();
+        options.forEach(name=>{
+          const option=document.createElement("option");
+          option.value=name;option.textContent=name;select.append(option);
+        });
+        select.value=row.item.account||"";
+        select.addEventListener("change",()=>{
+          row.item.account=select.value;scheduleStudentSave();
+        });
+        wrap.append(prefix,select);
+      }else{
+        const input=makeStudentInput(row.item,"شرح القيد","text",()=>{
+          entry.explanations[row.index]=input.value;scheduleStudentSave();
+        });
+        wrap.append(input);
+      }
+
+      statement.append(wrap);
+
+      const debit=document.createElement("td");
+      const credit=document.createElement("td");
+      if(row.kind==="debit"){
+        const amount=makeStudentInput(row.item.amount,"المبلغ","number",()=>{
+          row.item.amount=amount.value;scheduleStudentSave();
+        });
+        amount.min="0";
+        debit.append(amount);
+      }
+      if(row.kind==="credit"){
+        const amount=makeStudentInput(row.item.amount,"المبلغ","number",()=>{
+          row.item.amount=amount.value;scheduleStudentSave();
+        });
+        amount.min="0";
+        credit.append(amount);
+      }
+      tr.append(debit,credit,statement,dateCell);
+      body.append(tr);
+    });
+  });
+}
+
+function scheduleStudentSave(){
+  if(studentWorkStatus!=="in_progress") return;
+  $("studentSaveMessage").textContent="جارٍ حفظ إجاباتك...";
+  clearTimeout(studentSaveTimer);
+  studentSaveTimer=setTimeout(saveStudentWork,700);
+}
+
+async function saveStudentWork(){
+  if(!currentUser||!activeStudentAssignment||studentWorkStatus!=="in_progress")return;
+  const {error}=await db.from("student_work").upsert({
+    student_id:currentUser.id,
+    assignment_id:activeStudentAssignment.id,
+    answers:studentJournalEntries,
+    updated_at:new Date().toISOString()
+  },{onConflict:"student_id,assignment_id"});
+
+  if(error){
+    $("studentSaveMessage").textContent="تعذر حفظ الإجابات: "+error.message;
+    $("studentSaveMessage").style.color="#dc2626";
+    throw error;
+  }else{
+    $("studentSaveMessage").textContent="تم حفظ إجاباتك تلقائيًا.";
+    $("studentSaveMessage").style.color="#15803d";
+  }
+}
+
+async function openStudentAssignment(item){
+  activeStudentAssignment=item;
+  $("studentArea").classList.add("hidden");
+  $("studentSolver").classList.remove("hidden");
+  $("studentSolverTitle").textContent=`حل التكليف ${item.assignment_number}: ${item.title}`;
+  $("studentSolverDescription").textContent=item.description||"";
+  $("studentSaveMessage").textContent="جارٍ تحميل جدول التكليف...";
+
+  try{
+    // للاختبار على التكليف التجريبي فقط: هذه القراءة تجلب إعدادات الجدول كاملة.
+    const {data:table,error:tableError}=await db.from("assignment_tables")
+      .select("settings")
+      .eq("assignment_id",item.id)
+      .eq("table_order",1)
+      .maybeSingle();
+    if(tableError)throw tableError;
+    if(!table?.settings?.journal_data)throw new Error("لم يقم الأدمن بإنشاء جدول لهذا التكليف بعد.");
+
+    const journal=table.settings.journal_data;
+    const problem=table.settings.problem||{};
+    buildProblemView(problem,$("printQuestionContent"));
+    $("printQuestionContent").classList.add("problem-view");
+    $("printAssignmentNumber").textContent=`رقم الأسيمنت: ${item.assignment_number}`;
+    $("printStudentName").textContent=`اسم الطالب: ${currentDisplayName||"........................."}`;
+    const source=Array.isArray(journal.entries)?journal.entries:[];
+    if(!source.length)throw new Error("جدول التكليف فارغ.");
+
+    // نأخذ هيكل الجدول فقط، ونفرغ كل الخانات التي يجيب عنها الطالب.
+    studentJournalEntries=source.map(entry=>({
+      date:{day:"",month:""},
+      debit:(entry.debit||[]).map(()=>({account:"",amount:""})),
+      credit:(entry.credit||[]).map(()=>({account:"",amount:""})),
+      explanations:(entry.explanations||[]).map(()=>"")
+    }));
+
+    const {data:work,error:workError}=await db.from("student_work")
+      .select("answers,status,score,total_score,submitted_at")
+      .eq("student_id",currentUser.id)
+      .eq("assignment_id",item.id)
+      .maybeSingle();
+    if(workError)throw workError;
+
+    if(work?.answers && Array.isArray(work.answers)) studentJournalEntries=work.answers;
+    studentWorkStatus=work?.status||"in_progress";
+    const isLocked=studentWorkStatus!=="in_progress";
+    $("submitAssignment").classList.toggle("hidden",isLocked);
+    $("studentGradeResult").classList.toggle("hidden",studentWorkStatus!=="graded");
+    $("studentGradeResult").textContent=studentWorkStatus==="graded"
+      ? `درجتك: ${work.score} من ${work.total_score}` : "";
+
+    // تُستخدم قائمة الحسابات من إعدادات التكليف لعرض الاختيارات فقط.
+    window.studentAccountOptions=journal.account_options||"";
+    renderStudentJournal();
+    $("studentSaveMessage").textContent=isLocked
+      ? "تم تسليم هذا التكليف ولا يمكن تعديل الإجابات."
+      : (work?"تم استرجاع إجاباتك المحفوظة. اكتب لاستكمال الحل.":"ابدأ الحل؛ سيتم حفظ إجاباتك تلقائيًا.");
+    if(isLocked) $("studentJournalBody").querySelectorAll("input,select").forEach(el=>el.disabled=true);
+    $("studentSaveMessage").style.color="#64748b";
+  }catch(error){
+    $("studentJournalBody").replaceChildren();
+    $("studentSaveMessage").textContent="تعذر فتح التكليف: "+error.message;
+    $("studentSaveMessage").style.color="#dc2626";
+  }
+}
+
+function studentAccountList(){
+  return (window.studentAccountOptions||"").split(/[،,]/).map(x=>x.trim()).filter(Boolean);
+}
+
+$("printAssignment").addEventListener("click",()=>window.print());
+
+$("submitAssignment").addEventListener("click",async()=>{
+  if(!activeStudentAssignment || studentWorkStatus!=="in_progress") return;
+  if(!confirm("هل أنت متأكد أنك تريد التسليم الآن؟ (لن تكون قادر على تعديل اجاباتك بعد التسليم)")) return;
+  clearTimeout(studentSaveTimer);
+  $("submitAssignment").disabled=true;
+  $("studentSaveMessage").textContent="جارٍ حفظ الإجابات ثم التسليم والتصحيح...";
+  try{
+    await saveStudentWork();
+    const {error}=await db.rpc("submit_student_work",{p_assignment_id:activeStudentAssignment.id});
+    if(error) throw error;
+    const {data:work,error:loadError}=await db.from("student_work")
+      .select("status,score,total_score")
+      .eq("student_id",currentUser.id).eq("assignment_id",activeStudentAssignment.id).single();
+    if(loadError) throw loadError;
+    studentWorkStatus=work.status;
+    $("studentJournalBody").querySelectorAll("input,select").forEach(el=>el.disabled=true);
+    $("submitAssignment").classList.add("hidden");
+    $("studentGradeResult").classList.remove("hidden");
+    $("studentGradeResult").textContent=`تم تسليم التكليف بنجاح — درجتك: ${work.score} من ${work.total_score}`;
+    $("studentSaveMessage").textContent="تم التسليم، ولا يمكن تعديل الإجابات بعد الآن.";
+    $("studentSaveMessage").style.color="#15803d";
+  }catch(error){
+    $("studentSaveMessage").textContent="تعذر التسليم: "+error.message+" — إجاباتك المحفوظة لم يتم حذفها.";
+    $("studentSaveMessage").style.color="#dc2626";
+    $("submitAssignment").disabled=false;
+  }
+});
+
+$("closeStudentSolver").addEventListener("click",()=>{
+  clearTimeout(studentSaveTimer);
+  $("studentSolver").classList.add("hidden");
+  $("studentArea").classList.remove("hidden");
+  activeStudentAssignment=null;
+});
+
+async function showDashboard(user){
+  currentUser=user;
+  const {data:profile,error}=await db
+    .from("profiles")
+    .select("username,display_name,role")
+    .eq("id",user.id)
+    .single();
+
+  if(error){
+    showLogin();
+    message("message","تعذر تحميل بيانات الحساب: "+error.message,"#dc2626");
+    return;
+  }
+
+  $("authSection").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  $("logout").classList.remove("hidden");
+
+  currentDisplayName=profile.display_name || profile.username || "";
+  $("welcome").textContent="مرحبًا "+currentDisplayName;
+
+  if(profile.role==="admin"){
+    $("accountType").textContent="حساب أدمن";
+    $("adminArea").classList.remove("hidden");
+    $("studentArea").classList.add("hidden");
+    $("studentSolver").classList.add("hidden");
+    await loadAssignments();
+  }else{
+    $("accountType").textContent="حساب طالب";
+    $("studentArea").classList.remove("hidden");
+    $("adminArea").classList.add("hidden");
+    $("studentSolver").classList.add("hidden");
+    await loadStudentAssignments();
+  }
+}
+
+$("switchButton").addEventListener("click",()=>{
+  mode=mode==="login"?"signup":"login";
+  $("nameArea").classList.toggle("hidden",mode!=="signup");
+  $("submitButton").textContent=mode==="signup"?"إنشاء الحساب":"تسجيل الدخول";
+  $("switchButton").textContent=mode==="signup"?"العودة لتسجيل الدخول":"إنشاء حساب جديد";
+  message("message","");
+});
+
+$("authForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const username=$("username").value.trim();
+  const password=$("password").value;
+  const displayName=$("displayName").value.trim();
+
+  if(!/^[0-9]{11}$/.test(username)){
+    message("message","رقم الهاتف يجب أن يتكون من 11 رقمًا.","#dc2626");
+    return;
+  }
+
+  if(password.length<8){
+    message("message","كلمة المرور يجب ألا تقل عن 8 أحرف أو أرقام.","#dc2626");
+    return;
+  }
+
+  if(mode==="signup"&&!displayName){
+    message("message","اكتب اسم الطالب.","#dc2626");
+    return;
+  }
+
+  $("submitButton").disabled=true;
+  $("switchButton").disabled=true;
+  message("message","جارٍ تنفيذ الطلب...");
+
+  const email=`${username}@accounts.financial-accounting.example`;
+
+  try{
+    let result;
+
+    if(mode==="signup"){
+      result=await db.auth.signUp({
+        email,
+        password,
+        options:{data:{username,display_name:displayName}}
+      });
+    }else{
+      result=await db.auth.signInWithPassword({email,password});
+    }
+
+    if(result.error) throw result.error;
+
+    if(mode==="signup"){
+      message("message","تم إنشاء الحساب. يمكنك الآن تسجيل الدخول.","#15803d");
+      mode="login";
+      $("nameArea").classList.add("hidden");
+      $("submitButton").textContent="تسجيل الدخول";
+      $("switchButton").textContent="إنشاء حساب جديد";
+      $("password").value="";
+    }else if(result.data.user){
+      await showDashboard(result.data.user);
+    }
+
+  }catch(error){
+    message("message","حدث خطأ: "+error.message,"#dc2626");
+  }finally{
+    $("submitButton").disabled=false;
+    $("switchButton").disabled=false;
+  }
+});
+
+$("logout").addEventListener("click",async()=>{
+  const {error}=await db.auth.signOut();
+  if(error){
+    alert("تعذر تسجيل الخروج: "+error.message);
+    return;
+  }
+  showLogin();
+});
+
+$("authForm").reset();
+
+db.auth.getSession().then(({data,error})=>{
+  if(error){
+    showLogin();
+    return;
+  }
+  if(data.session?.user){
+    showDashboard(data.session.user);
+  }else{
+    showLogin();
+  }
+});
+
+db.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT" || !session){
+    showLogin();
+  }
+});
+</script>
+</body>
+</html>
